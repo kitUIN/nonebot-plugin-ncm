@@ -8,24 +8,24 @@
 
 # nonebot-plugin-ncm
 
-✨ 基于go-cqhttp与nonebot2的 网易云 无损音乐下载 ✨
+✨ 基于go-cqhttp与nonebot2的 网易云 无损音乐 点歌/下载 ✨
 </div>
 
 <p align="center">
-  <a href="https://github.com/kitUIN/nonebot_tools/blob/master/nonebot-plugin-ncm/nonebot-plugin-ncm/LICENSE">
+  <a href="https://github.com/kitUIN/nonebot-plugin-ncm/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license">
   </a>
-  <a>
+  <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.0-beta.2">
     <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.0-beta.2&color=brightgreen" alt="nonebot">
   </a>
-  <a href="https://pypi.python.org/pypi/nonebot-plugin-ncm">
-    <img src="https://img.shields.io/github/v/release/kitUIN/PicImageSearch" alt="release">
+  <a href="https://github.com/kitUIN/PicImageSearch/releases">
+    <img src="https://img.shields.io/github/v/release/kitUIN/nonebot-plugin-ncm" alt="release">
   </a>
 </p>
 
 
 ## 开始
-1.`pip install nonebot-plugin-ncm` 进行安装
+1.`pip install nonebot-plugin-ncm` 进行安装  
 2.并在`bot.py`添加`nonebot.load_plugin('nonebot-plugin-ncm')`(如果是通过`nb-cli`安装可以跳过这步(beta1以上版本))  
 如果希望使用`nonebot2 a16`及以下版本  
 请使用`pip install nonebot-plugin-ncm==1.1.0`进行安装  
@@ -43,7 +43,7 @@
 本程序实质为调用web接口下载音乐上传  
 默认下载最高音质的音乐 
  
-**默认解析状态为关闭，请在每个群内使用`#ncm t`开启**
+**默认解析状态为关闭，请在每个群内使用`/ncm t`开启**
 ```
 ncm_admin=["owner", "admin"] # 设置命令权限（非解析下载，仅解析功能开关设置）
 ncm_phone=  # 手机登录
