@@ -2,9 +2,16 @@
 name = "nonebot-plugin-ncm"
 version = "1.3.0"
 description = "基于go-cqhttp与nonebot2的 网易云 无损音乐下载"
-authors = ["kitUIN <kulujun@gmail.com>"]
 license = "Apache License 2.0"
-
+authors = ["kitUIN <kulujun@gmail.com>"]
+maintainers = []
+readme = "README.md"
+packages = [
+    { include = "nonebot-plugin-ncm" }
+]
+homepage = "https://github.com/kitUIN/nonebot-plugin-ncm"
+repository = "https://github.com/kitUIN/nonebot-plugin-ncm"
+keywords = ["netease-cloud-music", "netease", "go-cqhttp", "nonebot2"]
 [tool.poetry.dependencies]
 python = "^3.8"
 nonebot2 = "^2.0.0b1"
