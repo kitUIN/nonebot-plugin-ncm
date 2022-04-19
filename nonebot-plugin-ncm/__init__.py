@@ -17,19 +17,6 @@ from nonebot.params import CommandArg, RegexGroup, Arg
 from .data_source import Ncm, music, ncm_config, playlist, setting, Q, cmd
 
 
-async def set_check(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()) -> bool:
-    logger.debug(f"权限为{event.sender.role}的用户<{event.sender.nickname}>尝试使用命令{cmd}ncm {args}")
-    if event.sender.role not in ncm_config.ncm_admin:
-        logger.debug(f"执行错误:用户<{event.sender.nickname}>权限{event.sender.role}不在{ncm_config.ncm_admin}中")
-    elif event.get_user_id() in ncm_config.superusers:
-        logger.debug(f"执行错误:用户<{event.sender.nickname}>非超级管理员(SUPERUSERS)")
-    if event.sender.role in ncm_config.ncm_admin or event.get_user_id() in ncm_config.superusers:
-        return True
-    else:
-        await bot.send(event=event, message=Message(MessageSegment.text("你咩有权限哦~")))
-        return False
-
-
 async def song_is_open(event: GroupMessageEvent) -> bool:
     info = setting.search(Q["group_id"] == event.dict()["group_id"])
     if info:
@@ -58,9 +45,8 @@ async def music_reply_rule(event: GroupMessageEvent):
     return event.reply and event.reply.sender.user_id == event.self_id
 
 
-set = on_command("ncm",
-                 rule=Rule(set_check),
-                 priority=1, block=False)  # 功能设置
+ncm_set = on_command("ncm",
+                     priority=1, block=False)  # 功能设置
 music_regex = on_regex("(song|url)\?id=([0-9]+)(|&)",
                        rule=Rule(song_is_open),
                        priority=2, block=False)  # 歌曲id识别 (新增json识别)
@@ -141,40 +127,49 @@ async def music_reply_receive(bot: Bot, event: GroupMessageEvent):
             logger.error("数据库中未发现该歌单ID")
 
 
-@set.handle()
+@ncm_set.handle()
 async def set_receive(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):  # 功能设置接收
     true = ["True", "T", "true", "t"]
     false = ["False", "F", "false", "f"]
-    if args:
-        args = args.__str__().split()
-        mold = args[0]
-    else:
-        msg = f"{cmd}ncm:获取命令菜单\r\n说明:网易云歌曲分享到群内后回复机器人即可下载\r\n" \
-              f"{cmd}ncm t:开启解析\r\n{cmd}ncm f:关闭解析\n{cmd}点歌 歌名:点歌"
-        return await set.finish(message=MessageSegment.text(msg))
+    logger.debug(f"权限为{event.sender.role}的用户<{event.sender.nickname}>尝试使用命令{cmd}ncm {args}")
+    if event.sender.role not in ncm_config.ncm_admin:
+        logger.debug(f"执行错误:用户<{event.sender.nickname}>权限{event.sender.role}不在{ncm_config.ncm_admin}中")
+    elif event.get_user_id() not in ncm_config.superusers:
+        logger.debug(f"执行错误:用户<{event.sender.nickname}>非超级管理员(SUPERUSERS)")
+    if event.sender.role in ncm_config.ncm_admin or event.get_user_id() in ncm_config.superusers:
+        if args:
+            args = args.__str__().split()
+            mold = args[0]
+        else:
+            msg = f"{cmd}ncm:获取命令菜单\r\n说明:网易云歌曲分享到群内后回复机器人即可下载\r\n" \
+                  f"{cmd}ncm t:开启解析\r\n{cmd}ncm f:关闭解析\n{cmd}点歌 歌名:点歌"
+            return await ncm_set.finish(message=MessageSegment.text(msg))
 
-    info = setting.search(Q["group_id"] == event.dict()["group_id"])
-    # logger.info(info)
-    if info:
-        if mold in true:
-            # logger.info(info)
-            info[0]["song"] = True
-            info[0]["list"] = True
-            setting.update(info[0], Q["group_id"] == event.dict()["group_id"])
-            msg = "已开启自动下载功能"
-            await bot.send(event=event, message=Message(MessageSegment.text(msg)))
-        elif mold in false:
-            info[0]["song"] = False
-            info[0]["list"] = False
-            setting.update(info[0], Q["group_id"] == event.dict()["group_id"])
-            msg = "已关闭自动下载功能"
-            await bot.send(event=event, message=Message(MessageSegment.text(msg)))
-        logger.debug(f"用户<{event.sender.nickname}>执行操作成功")
+        info = setting.search(Q["group_id"] == event.dict()["group_id"])
+        # logger.info(info)
+        if info:
+            if mold in true:
+                # logger.info(info)
+                info[0]["song"] = True
+                info[0]["list"] = True
+                setting.update(info[0], Q["group_id"] == event.dict()["group_id"])
+                msg = "已开启自动下载功能"
+                await bot.send(event=event, message=Message(MessageSegment.text(msg)))
+            elif mold in false:
+                info[0]["song"] = False
+                info[0]["list"] = False
+                setting.update(info[0], Q["group_id"] == event.dict()["group_id"])
+                msg = "已关闭自动下载功能"
+                await bot.send(event=event, message=Message(MessageSegment.text(msg)))
+            logger.debug(f"用户<{event.sender.nickname}>执行操作成功")
+        else:
+            if mold in true:
+                setting.insert({"group_id": event.dict()["group_id"], "song": True, "list": True})
+            elif mold in false:
+                setting.insert({"group_id": event.dict()["group_id"], "song": False, "list": False})
+
     else:
-        if mold in true:
-            setting.insert({"group_id": event.dict()["group_id"], "song": True, "list": True})
-        elif mold in false:
-            setting.insert({"group_id": event.dict()["group_id"], "song": False, "list": False})
+        await bot.send(event=event, message=Message(MessageSegment.text("你咩有权限哦~")))
 
 
 # 若此文本不存在，将显示包的__doc__
