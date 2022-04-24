@@ -5,12 +5,14 @@ from pathlib import Path
 from datetime import datetime
 from typing import Union
 
+import qrcode
+import time
 from aiofile import async_open
 
 import httpx
 import nonebot
 
-from pyncm import apis
+from pyncm import apis, GetCurrentSession, Session
 from pyncm.apis.cloudsearch import SONG, USER, PLAYLIST
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import (MessageSegment, Message,
@@ -22,19 +24,24 @@ from tinydb import TinyDB, Query
 
 dbPath = Path("db")
 musicPath = Path("music")
+
 if not musicPath.is_dir():
-    Path("music").mkdir()
-    logger.success("音乐库创建成功")
+    musicPath.mkdir()
+    logger.success("ncm音乐库创建成功")
 if not dbPath.is_dir():
-    Path("db").mkdir()
-    logger.success("数据库目录创建成功")
+    dbPath.mkdir()
+    logger.success("ncm数据库目录创建成功")
 music = TinyDB("./db/musics.json")
 playlist = TinyDB("./db/playlist.json")
-setting = TinyDB("./db/setting.json")
+setting = TinyDB("./db/ncm_setting.json")
+ncm_cache = TinyDB("./db/ncm_cache.json")
 Q = Query()
 cmd = list(nonebot.get_driver().config.command_start)[0]
-if ncm_config.ncm_phone == "":
-    logger.error("您未填写账号密码,ncm功能将无法启动")
+
+
+class NcmLoginFailedException(Exception): pass
+
+
 #  白名单导入
 for ids in ncm_config.whitelist:
     info = setting.search(Q["group_id"] == ids)
@@ -47,11 +54,64 @@ for ids in ncm_config.whitelist:
 
 
 class Ncm:
-    def __init__(self, bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
+    def __init__(self):
         self.api = apis
-        self.api.login.LoginViaCellphone(phone=ncm_config.ncm_phone, password=ncm_config.ncm_password)
+        self.bot = None
+        self.event = None
+
+    def get_session(self, bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
         self.bot = bot
         self.event = event
+
+    def save_user(self, sess: Session, st: dict):
+        info = ncm_cache.search(Q["uid"] == "user")
+        cookie = sess.cookies.get_dict()
+        if info:
+            info[0]['st'] = st
+            info[0]['cookie'] = cookie
+            ncm_cache.update(info[0], Q["uid"] == "user")
+        else:
+            ncm_cache.insert({"uid": "user", "cookie": cookie, "st": st})
+
+    def login(self):
+        try:
+            self.api.login.LoginViaCellphone(phone=ncm_config.ncm_phone, password=ncm_config.ncm_password)
+
+            logger.success("登录成功")
+        except Exception as e:
+            if str(e) == str({'code': 400, 'message': '登陆失败,请进行安全验证'}):
+                logger.error("缺少安全验证，请将账号留空进行二维码登录")
+                logger.info("自动切换为二维码登录↓")
+                self.get_qrcode()
+            else:
+                raise e
+
+    def get_qrcode(self):
+        # info = ncm_cache.search(Q["uid"] == "user")
+        # if info:
+        #     try:
+        #         logger.info("检测到用户缓存")
+        #         GetCurrentSession().cookies.set_cookie(dict_from_cookiejar(info[0]['cookie']))
+        #         self.api.login.WriteLoginInfo(info[0]['st'])
+        #         return logger.success("自动登录成功")
+        #     except:
+        #         logger.error("自动登录失败，进入手动二维码登录模式")
+        uuid = self.api.login.LoginQrcodeUnikey()["unikey"]
+        url = f"https://music.163.com/login?codekey={uuid}"
+        img = qrcode.make(url)
+        img.save('ncm.png')
+        logger.info("二维码已经保存在当前目录下的ncm.png，请使用手机网易云客户端扫码登录。")
+        while True:
+            rsp = self.api.login.LoginQrcodeCheck(uuid)  # 检测扫描状态
+            if rsp["code"] == 803 or rsp["code"] == 800:
+                st = self.api.login.GetCurrentLoginStatus()
+                logger.debug(st)
+                self.api.login.WriteLoginInfo(st)
+
+                self.save_user(GetCurrentSession(), st)
+                logger.success("登录成功")
+                return True
+            time.sleep(1)
 
     def detail(self, ids: list) -> list:
         songs: list = self.api.track.GetTrackDetail(song_ids=ids)["songs"]
@@ -150,3 +210,11 @@ class Ncm:
                     await self.bot.send(event=self.event,
                                         message=Message(MessageSegment.text(f"下载进度:{num}/{len(ids)}")))
                 num += 1
+
+
+nncm = Ncm()
+if ncm_config.ncm_phone == "":
+    logger.warning("您未填写账号密码,自动进入二维码登录模式")
+    nncm.get_qrcode()
+else:
+    nncm.login()

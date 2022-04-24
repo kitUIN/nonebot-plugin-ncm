@@ -14,7 +14,7 @@ import re
 
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg, RegexGroup, Arg
-from .data_source import Ncm, music, ncm_config, playlist, setting, Q, cmd
+from .data_source import nncm, music, ncm_config, playlist, setting, Q, cmd
 
 
 async def song_is_open(event: GroupMessageEvent) -> bool:
@@ -72,11 +72,12 @@ async def receive_song(bot: Bot,
                        event: Union[GroupMessageEvent, PrivateMessageEvent],
                        song: Message = Arg(),
                        ):
-    _id = await Ncm(bot, event).search_song(keyword=song.__str__(), limit=1)
+    nncm.get_session(bot, event)
+    _id = await nncm.search_song(keyword=song.__str__(), limit=1)
     try:
         await bot.send(event=event, message=Message(MessageSegment.music(type_="163", id_=_id)))
         if isinstance(event, GroupMessageEvent):
-            await Ncm(bot, event).parse_song(_id)
+            await nncm.parse_song(_id)
     except ActionFailed:
         await search.finish(event=event, message="[WARNING]: 合并转发(群)消息发送失败: 账号可能被风控")
 
@@ -85,14 +86,16 @@ async def receive_song(bot: Bot,
 async def music_receive(bot: Bot, event: GroupMessageEvent, regroup: Tuple[Any, ...] = RegexGroup()):
     nid = regroup[1]
     logger.debug(f"已识别NID:{nid}的歌曲")
-    await Ncm(bot, event).parse_song(nid)
+    nncm.get_session(bot, event)
+    await nncm.parse_song(nid)
 
 
 @playlist_regex.handle()
 async def music_receive(bot: Bot, event: GroupMessageEvent, regroup: Tuple[Any, ...] = RegexGroup()):
     lid = regroup[0]
     logger.debug(f"已识别LID:{lid}的歌单")
-    msg = await Ncm(bot, event).playlist(lid=lid)
+    nncm.get_session(bot, event)
+    msg = await nncm.playlist(lid=lid)
     await bot.send(event=event, message=Message(MessageSegment.text(msg)))
 
 
@@ -102,7 +105,7 @@ async def music_reply_receive(bot: Bot, event: GroupMessageEvent):
         message: str = event.dict()["reply"]["message"][0].data["text"]
     except Exception:
         return
-    nncm = Ncm(bot, event)
+    nncm.get_session(bot, event)
     nid = re.search("ID:([0-9]*)", message)
     if nid:
         await bot.send(event=event, message="少女祈祷中🙏...")
