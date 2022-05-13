@@ -18,7 +18,7 @@
   <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.0-beta.2">
     <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.0-beta.2&color=brightgreen" alt="nonebot">
   </a>
-  <a href="https://github.com/kitUIN/PicImageSearch/releases">
+  <a href="https://github.com/kitUIN/nonebot-plugin-ncm/releases">
     <img src="https://img.shields.io/github/v/release/kitUIN/nonebot-plugin-ncm" alt="release">
   </a>
 </p>
