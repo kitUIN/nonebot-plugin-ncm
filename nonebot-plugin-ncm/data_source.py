@@ -120,9 +120,9 @@ class Ncm:
 
     async def search_song(self, keyword: str, limit: int = 1) -> int:  # 搜索歌曲
         res = self.api.cloudsearch.GetSearchResult(keyword=keyword, stype=SONG, limit=limit)
-        data = res["result"]["songs"]
+        logger.debug(f"搜索歌曲{keyword},返回结果:{res.json()}")
+        data = res.json()["result"]["songs"]
         if data:
-            logger.info(data)
             return data[0]["id"]
 
     async def search_user(self, keyword: str, limit: int = 1):  # 搜索用户
