@@ -16,7 +16,14 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg, RegexGroup, Arg
 from .data_source import nncm, music, ncm_config, playlist, setting, Q, cmd
 
+# =======nonebot-plugin-help=======
+__usage__ = f'将网易云歌曲/歌单分享到群聊即可自动解析\n回复机器人解析消息即可自动下载(需要时间)\n' \
+            f'{cmd}ncm t 开启解析\n{cmd}ncm t 关闭解析\n{cmd}点歌 歌名:点歌'
+__help_version__ = '1.3.6'
+__help_plugin_name__ = "✨ 基于go-cqhttp与nonebot2的 网易云 无损音乐下载 ✨"
 
+
+# =================================
 async def song_is_open(event: GroupMessageEvent) -> bool:
     info = setting.search(Q["group_id"] == event.dict()["group_id"])
     if info:
@@ -173,15 +180,3 @@ async def set_receive(bot: Bot, event: GroupMessageEvent, args: Message = Comman
 
     else:
         await bot.send(event=event, message=Message(MessageSegment.text("你咩有权限哦~")))
-
-
-# 若此文本不存在，将显示包的__doc__
-__usage__ = f'将网易云歌曲/歌单分享到群聊即可自动解析\n回复机器人解析消息即可自动下载(需要时间)\n' \
-            f'{cmd}ncm t 开启解析\n{cmd}ncm t 关闭解析\n{cmd}点歌 歌名:点歌'
-
-# 您的插件版本号，将在/help list中显示
-__help_version__ = '1.3.0'
-
-# 此名称有助于美化您的插件在/help list中的显示
-# 但使用/help xxx查询插件用途时仍必须使用包名
-__help_plugin_name__ = "✨ 基于go-cqhttp与nonebot2的 网易云 无损音乐下载 ✨"
