@@ -21,6 +21,7 @@
   <a href="https://github.com/kitUIN/nonebot-plugin-ncm/releases">
     <img src="https://img.shields.io/github/v/release/kitUIN/nonebot-plugin-ncm" alt="release">
   </a>
+  <a href="https://wakatime.com/badge/user/3b5608c7-e0b6-44a2-a217-cad786040b48/project/2a431792-e82f-48f5-839c-9ee566910fe5"><img src="https://wakatime.com/badge/user/3b5608c7-e0b6-44a2-a217-cad786040b48/project/2a431792-e82f-48f5-839c-9ee566910fe5.svg" alt="wakatime"></a>
 </p>
 
 
