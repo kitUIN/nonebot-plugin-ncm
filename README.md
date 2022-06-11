@@ -1,7 +1,7 @@
 
 
 <p align="center">
-  <img src="https://i.niupic.com/images/2022/01/17/9TxD.png" width="200" height="200" alt="nonebot"></a>
+  <img src="https://files.catbox.moe/7cy61g.png" width="200" height="200" alt="nonebot"></a>
 </p>
 
 <div align="center">
