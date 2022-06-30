@@ -4,6 +4,7 @@
 from pathlib import Path
 from datetime import datetime
 from typing import Union
+import re
 
 import qrcode
 import time
@@ -190,6 +191,7 @@ class Ncm:
             url = data[i]["url"]
             nid = data[i]["id"]
             filename = f"{name[i]}.{data[i]['type']}"
+            filename = re.sub('[\/:*?"<>|]','-', filename)
             file = Path.cwd().joinpath("music").joinpath(filename)
             config = {
                 "id": nid,
