@@ -13,7 +13,7 @@ from aiofile import async_open
 import httpx
 import nonebot
 
-from pyncm import apis, GetCurrentSession, Session
+from pyncm import apis, Session, GetCurrentSession, DumpSessionAsString, LoadSessionFromString, SetCurrentSession
 from pyncm.apis.cloudsearch import SONG, USER, PLAYLIST
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import (MessageSegment, Message,
@@ -23,6 +23,7 @@ from nonebot.adapters.onebot.v11 import (MessageSegment, Message,
 from .config import ncm_config
 from tinydb import TinyDB, Query
 
+# ============数据库导入=============
 dbPath = Path("db")
 musicPath = Path("music")
 
@@ -43,7 +44,7 @@ cmd = list(nonebot.get_driver().config.command_start)[0]
 class NcmLoginFailedException(Exception): pass
 
 
-#  白名单导入
+# ============白名单导入=============
 for ids in ncm_config.whitelist:
     info = setting.search(Q["group_id"] == ids)
     if info:
@@ -54,6 +55,7 @@ for ids in ncm_config.whitelist:
         setting.insert({"group_id": ids, "song": True, "list": True})
 
 
+# ============主类=============
 class Ncm:
     def __init__(self):
         self.api = apis
@@ -64,21 +66,26 @@ class Ncm:
         self.bot = bot
         self.event = event
 
-    def save_user(self, sess: Session, st: dict):
+    @staticmethod
+    def save_user(session: str):
         info = ncm_cache.search(Q["uid"] == "user")
-        cookie = sess.cookies.get_dict()
         if info:
-            info[0]['st'] = st
-            info[0]['cookie'] = cookie
+            info[0]['session'] = session
             ncm_cache.update(info[0], Q["uid"] == "user")
         else:
-            ncm_cache.insert({"uid": "user", "cookie": cookie, "st": st})
+            ncm_cache.insert({"uid": "user", "session": ""})
+
+    @staticmethod
+    def load_user():
+        info = ncm_cache.search(Q["uid"] == "user")
+        if info:
+            SetCurrentSession(LoadSessionFromString(info[0]['session']))
 
     def login(self):
         try:
             self.api.login.LoginViaCellphone(phone=ncm_config.ncm_phone, password=ncm_config.ncm_password)
-
             logger.success("登录成功")
+            self.save_user(DumpSessionAsString(GetCurrentSession()))
         except Exception as e:
             if str(e) == str({'code': 400, 'message': '登陆失败,请进行安全验证'}):
                 logger.error("缺少安全验证，请将账号留空进行二维码登录")
@@ -108,8 +115,7 @@ class Ncm:
                 st = self.api.login.GetCurrentLoginStatus()
                 logger.debug(st)
                 self.api.login.WriteLoginInfo(st)
-
-                self.save_user(GetCurrentSession(), st)
+                self.save_user(DumpSessionAsString(GetCurrentSession()))
                 logger.success("登录成功")
                 return True
             time.sleep(1)
@@ -191,7 +197,7 @@ class Ncm:
             url = data[i]["url"]
             nid = data[i]["id"]
             filename = f"{name[i]}.{data[i]['type']}"
-            filename = re.sub('[\/:*?"<>|]','-', filename)
+            filename = re.sub('[\/:*?"<>|]', '-', filename)
             file = Path.cwd().joinpath("music").joinpath(filename)
             config = {
                 "id": nid,
@@ -222,4 +228,9 @@ if ncm_config.ncm_phone == "":
     logger.warning("您未填写账号密码,自动进入二维码登录模式")
     nncm.get_qrcode()
 else:
-    nncm.login()
+    info = ncm_cache.search(Q["uid"] == "user")
+    if info:
+        logger.info("检测到缓存，自动加载用户")
+        nncm.load_user()
+    else:
+        nncm.login()

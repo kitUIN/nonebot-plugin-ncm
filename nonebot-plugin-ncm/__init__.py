@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from typing import Tuple, Any, Union
-
+import nonebot
 from nonebot.rule import Rule
 from nonebot.log import logger
 from nonebot import on_regex, on_command, on_message
@@ -17,13 +17,17 @@ from nonebot.params import CommandArg, RegexGroup, Arg
 from .data_source import nncm, music, ncm_config, playlist, setting, Q, cmd
 
 # =======nonebot-plugin-help=======
-__usage__ = f'将网易云歌曲/歌单分享到群聊即可自动解析\n回复机器人解析消息即可自动下载(需要时间)\n' \
-            f'{cmd}ncm t 开启解析\n{cmd}ncm t 关闭解析\n{cmd}点歌 歌名:点歌'
-__help_version__ = '1.3.6'
-__help_plugin_name__ = "✨ 基于go-cqhttp与nonebot2的 网易云 无损音乐下载 ✨"
+__plugin_meta__ = nonebot.plugin.PluginMetadata(
+    name='✨ 基于go-cqhttp与nonebot2的 网易云 无损音乐下载 ✨',
+    description='您的简单插件描述',
+    usage=f'''将网易云歌曲/歌单分享到群聊即可自动解析\n回复机器人解析消息即可自动下载(需要时间)\n
+            {cmd}ncm t 开启解析\n{cmd}ncm t 关闭解析\n{cmd}点歌 歌名:点歌''',
+    extra={'version': '1.4.0'}
+)
 
 
-# =================================
+# ========nonebot-plugin-ncm======
+# ===============Rule=============
 async def song_is_open(event: GroupMessageEvent) -> bool:
     info = setting.search(Q["group_id"] == event.dict()["group_id"])
     if info:
@@ -52,20 +56,26 @@ async def music_reply_rule(event: GroupMessageEvent):
     return event.reply and event.reply.sender.user_id == event.self_id
 
 
+# ============Matcher=============
 ncm_set = on_command("ncm",
-                     priority=1, block=False)  # 功能设置
+                     priority=1, block=False)
+'''功能设置'''
 music_regex = on_regex("(song|url)\?id=([0-9]+)(|&)",
                        rule=Rule(song_is_open),
-                       priority=2, block=False)  # 歌曲id识别 (新增json识别)
+                       priority=2, block=False)
+'''歌曲id识别'''
 playlist_regex = on_regex("playlist\?id=([0-9]+)&",
                           rule=Rule(playlist_is_open),
-                          priority=2, block=False)  # 歌单识别
+                          priority=2, block=False)
+'''歌单识别'''
 music_reply = on_message(priority=2,
                          rule=Rule(music_reply_rule),
-                         block=False)  # 回复下载
+                         block=False)
+'''回复下载'''
 search = on_command("点歌",
                     rule=Rule(search_check),
-                    priority=2, block=False)  # 搜东西
+                    priority=2, block=False)
+'''点歌'''
 
 
 @search.handle()
