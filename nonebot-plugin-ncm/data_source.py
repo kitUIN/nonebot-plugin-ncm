@@ -77,16 +77,15 @@ class Ncm:
             ncm_cache.insert({"uid": "user", "session": session})
 
     @staticmethod
-    def load_user():
-        info = ncm_cache.search(Q["uid"] == "user")
-        if info:
-            SetCurrentSession(LoadSessionFromString(info[0]['session']))
+    def load_user(info):
+       SetCurrentSession(LoadSessionFromString(info[0]['session']))
+            
 
     def login(self):
         try:
             self.api.login.LoginViaCellphone(phone=ncm_config.ncm_phone, password=ncm_config.ncm_password)
             self.get_user_info()
-            self.save_user(DumpSessionAsString(GetCurrentSession()))
+            
         except Exception as e:
             if str(e) == str({'code': 400, 'message': '登陆失败,请进行安全验证'}):
                 logger.error("缺少安全验证，请将账号留空进行二维码登录")
@@ -95,25 +94,24 @@ class Ncm:
             else:
                 raise e
 
-    @staticmethod
-    def get_user_info():
-        logger.success(
-            f"欢迎您网易云用户:{GetCurrentSession().nickname} [{GetCurrentSession().uid}],上次登录IP:{GetCurrentSession().lastIP}")
+    def get_user_info(self):
+        logger.success(f"欢迎您网易云用户:{GetCurrentSession().nickname} [{GetCurrentSession().uid}]")
+        self.save_user(DumpSessionAsString(GetCurrentSession()))
 
     def get_phone_login(self):
-        phone = ncm_config.ncm_phone
-        ctcode = int(ncm_config.ncm_ctcode)
-        result = self.api.login.SetSendRegisterVerifcationCodeViaCellphone(cell=phone, ctcode=ctcode)
-        if result.get('code', 0) != 200:
+        phone=ncm_config.ncm_phone
+        ctcode=int(ncm_config.ncm_ctcode)
+        result = self.api.login.SetSendRegisterVerifcationCodeViaCellphone(cell=phone,ctcode=ctcode)        
+        if not result.get('code',0) == 200:
             logger.error(result)
         else:
-            logger.success('已发送验证码,输入验证码:')
+            logger.success('已发送验证码,输入验证码:')    
         while True:
             captcha = int(input())
-            verified = self.api.login.GetRegisterVerifcationStatusViaCellphone(phone, str(captcha), ctcode)
-            if verified.get('code', 0) == 200:
+            verified = self.api.login.GetRegisterVerifcationStatusViaCellphone(phone,captcha,ctcode)
+            if verified.get('code',0) == 200:
                 break
-        self.api.login.LoginViaCellphone(phone, captcha, ctcode=ctcode)
+        result = self.api.login.LoginViaCellphone(phone,captcha=captcha,ctcode=ctcode)
         self.get_user_info()
 
     def get_qrcode(self):
@@ -137,7 +135,6 @@ class Ncm:
                 st = self.api.login.GetCurrentLoginStatus()
                 logger.debug(st)
                 self.api.login.WriteLoginInfo(st)
-                self.save_user(DumpSessionAsString(GetCurrentSession()))
                 self.get_user_info()
                 return True
             time.sleep(1)
@@ -246,10 +243,10 @@ class Ncm:
 
 
 nncm = Ncm()
-info = ncm_cache.search(Q["uid"] == "user")
+info = ncm_cache.search(Q.uid == "user")
 if info:
     logger.info("检测到缓存，自动加载用户")
-    nncm.load_user()
+    nncm.load_user(info)
     nncm.get_user_info()
 elif ncm_config.ncm_phone == "":
     logger.warning("您未填写账号,自动进入二维码登录模式")
@@ -259,3 +256,4 @@ elif ncm_config.ncm_password == "":
     nncm.get_phone_login()
 else:
     nncm.login()
+        

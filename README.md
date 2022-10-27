@@ -15,8 +15,8 @@
   <a href="https://github.com/kitUIN/nonebot-plugin-ncm/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license">
   </a>
-  <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.0-beta.2">
-    <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.0-beta.2&color=brightgreen" alt="nonebot">
+  <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.0-rc.1">
+    <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.0-rc.1&color=brightgreen" alt="nonebot">
   </a>
   <a href="https://github.com/kitUIN/nonebot-plugin-ncm/releases">
     <img src="https://img.shields.io/github/v/release/kitUIN/nonebot-plugin-ncm" alt="release">
@@ -25,48 +25,50 @@
 </p>
 
 
-## 开始
+## 安装
+### 使用pip安装
 1.`pip install nonebot-plugin-ncm` 进行安装  
-2.并在`bot.py`添加`nonebot.load_plugin('nonebot-plugin-ncm')`(如果是通过`nb-cli`安装可以跳过这步(beta1以上版本))  
-如果希望使用`nonebot2 a16`及以下版本  
-请使用`pip install nonebot-plugin-ncm==1.1.0`进行安装  
-### 命令列表：(命令开始符号可自行调换)  
+2.并在`bot.py`添加`nonebot.load_plugin('nonebot-plugin-ncm')`
+### 使用nb-cli安装(推荐)
+`nb plugin install nonebot-plugin-ncm` 进行安装
+
+<details>
+  <summary>如果希望使用`nonebot2 a16`及以下版本 </summary>
+  请使用`pip install nonebot-plugin-ncm==1.1.0`进行安装
+</details>
+
+### 命令列表：
 | 命令     | 备注     |
 |--------|--------|
 | /ncm   | 获取命令菜单 |
 | /ncm t | 开启解析   |
 | /ncm f | 关闭解析   |
 | /点歌 歌名 | 点歌     |
-## 使用说明
-`.env`配置文件中需要添加拥有**VIP的网易云账号**  
-  
+- 命令开始符号会自动识别[`COMMAND_START`](https://v2.nonebot.dev/docs/api/config#Config-command_start)项
 
-本程序实质为调用web接口下载音乐上传  
-默认下载最高音质的音乐 
- 
-**默认解析状态为关闭，请在每个群内使用`/ncm t`开启**
+## 注意说明
+- 使用的网易云账号**需要拥有黑胶VIP**
+- **默认解析状态为关闭，请在每个群内使用`/ncm t`开启** (或者使用配置中的`white_list`项批量导入需要开启的群号)
+- 默认下载最高音质的音乐 
+- 本程序实质为调用web接口下载音乐上传  
+- 网易云单曲分享到群内会自动解析下载  
+- **仅限群聊使用！！！(因为go-cqhttp还不支持好友发文件)**  
+- **回复bot消息即可自动下载上传音乐文件(回复消息不输入内容也行)**
+- **低版本升级至1.0.0版本请删掉db文件夹**  
+
+## 配置文件说明
 ```
 ncm_admin=["owner", "admin"] # 设置命令权限（非解析下载，仅解析功能开关设置）
 ncm_phone=  # 手机登录
 ncm_password=  # 密码
-# (总开关代表是否可以在群内开启
-# 总开关开启后在每个群内依旧是默认关闭的)
-ncm_song=True  # 单曲解析总开关
-ncm_list=True  # 歌单解析总开关
-ncm_search=True  # 点歌总总开关
+# 总开关开启后在每个群内依旧是默认关闭的
+ncm_song=True  # 单曲解析功能总开关
+ncm_list=True  # 歌单解析功能总开关
+ncm_search=True  # 点歌功能总开关
 white_list=[]  # 白名单一键导入
 ```
-网易云单曲分享到群内会自动解析下载  
-**仅限群聊使用！！！(因为go-cqhttp还不支持好友发文件)**  
 
-  
-**默认不开启解析功能**  
-**请使用`/ncm t` 启动解析**  
-(或者使用配置中的`white_list`项批量导入需要开启的群号)
 
-**回复bot消息即可自动下载上传音乐文件(回复消息不输入内容也行)**  
-
-**低版本升级至1.0.0版本请删掉db文件夹**  
 ## 功能列表
 - [x] 识别/下载 网易云单曲
     - 链接
