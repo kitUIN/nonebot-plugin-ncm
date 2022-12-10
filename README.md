@@ -15,8 +15,8 @@
   <a href="https://github.com/kitUIN/nonebot-plugin-ncm/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license">
   </a>
-  <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.0-rc.1">
-    <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.0-rc.1&color=brightgreen" alt="nonebot">
+  <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.0rc2">
+    <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.0rc2&color=brightgreen" alt="nonebot">
   </a>
   <a href="https://github.com/kitUIN/nonebot-plugin-ncm/releases">
     <img src="https://img.shields.io/github/v/release/kitUIN/nonebot-plugin-ncm" alt="release">
@@ -37,37 +37,39 @@
   请使用`pip install nonebot-plugin-ncm==1.1.0`进行安装
 </details>
 
+## 升级
+1.`pip install nonebot-plugin-ncm --upgrade` 进行升级  
+2. 低于`1.5.0`版本升级请删除`db`文件夹内`ncm`开头文件  
+3. 根据新的`config`项配置`.env`文件
+## 快速使用
+将链接或者卡片分享到聊天群或机器人,回复分享的消息并输入`下载`即可进行下载  
+**默认下载状态为关闭，请在每个群内使用`/ncm t`开启,私聊则默认开启**
+![img](https://files.catbox.moe/g7c230.png)
 ### 命令列表：
-| 命令     | 备注     |
-|--------|--------|
-| /ncm   | 获取命令菜单 |
-| /ncm t | 开启解析   |
-| /ncm f | 关闭解析   |
-| /点歌 歌名 | 点歌     |
+| 命令                 | 备注        |
+|--------------------|-----------|
+| /ncm               | 获取命令菜单    |
+| /ncm t             | 开启下载      |
+| /ncm f             | 关闭下载      |
+| /ncm search t      | 开启点歌      |
+| /ncm search f      | 关闭点歌      |
+| /点歌 歌名             | 点歌        |
+| /ncm private qq号 t | 开启该用户私聊下载 |
+| /ncm private qq号 f | 关闭该用户私聊下载 |
 - 命令开始符号会自动识别[`COMMAND_START`](https://v2.nonebot.dev/docs/api/config#Config-command_start)项
 
 ## 注意说明
-- 使用的网易云账号**需要拥有黑胶VIP**
-- **默认解析状态为关闭，请在每个群内使用`/ncm t`开启** (或者使用配置中的`white_list`项批量导入需要开启的群号)
+- 使用的网易云账号**需要拥有黑胶VIP** 
 - 默认下载最高音质的音乐 
 - 本程序实质为调用web接口下载音乐上传  
-- 网易云单曲分享到群内会自动解析下载  
-- **仅限群聊使用！！！(因为go-cqhttp还不支持好友发文件)**  
-- **回复bot消息即可自动下载上传音乐文件(回复消息不输入内容也行)**
-- **低版本升级至1.0.0版本请删掉db文件夹**  
 
 ## 配置文件说明
 ```
-ncm_admin=["owner", "admin"] # 设置命令权限（非解析下载，仅解析功能开关设置）
+ncm_admin_level=1 # 设置命令权限(1:仅限superusers和群主,2:在1的基础上+管理员,3:所有用户)
+ncm_ctcode="86" # 手机号区域码,默认86
 ncm_phone=  # 手机登录
 ncm_password=  # 密码
-# 总开关开启后在每个群内依旧是默认关闭的
-ncm_song=True  # 单曲解析功能总开关
-ncm_list=True  # 歌单解析功能总开关
-ncm_search=True  # 点歌功能总开关
-white_list=[]  # 白名单一键导入
 ```
-
 
 ## 功能列表
 - [x] 识别/下载 网易云单曲
@@ -80,16 +82,6 @@ white_list=[]  # 白名单一键导入
     - 卡片转发
 - [x] 点歌(网易云)
 - [ ] QQ音乐无损下载
-### 示例图
-<details>
-  <summary>点击查看详细内容</summary>
-
-  **单曲**  
-  [![WqbK7d.png](https://z3.ax1x.com/2021/07/30/WqbK7d.png)](https://imgtu.com/i/WqbK7d)
-  **歌单**  
-  [![WqbQAA.png](https://z3.ax1x.com/2021/07/30/WqbQAA.png)](https://imgtu.com/i/WqbQAA)  
-  
-</details>
 
 # 鸣谢
 - [pyncm](https://github.com/greats3an/pyncm)

@@ -19,8 +19,8 @@ from .data_source import nncm, ncm_config, setting, Q, cmd
 __plugin_meta__ = nonebot.plugin.PluginMetadata(
     name='✨ 基于go-cqhttp与nonebot2的 网易云 无损音乐下载 ✨',
     description='网易云 无损音乐下载',
-    usage=f'''将网易云歌曲/歌单分享到群聊即可自动解析\n回复机器人解析消息即可自动下载(需要时间)\n
-            {cmd}ncm t:开启解析\n{cmd}ncm t:关闭解析\n{cmd}点歌 歌名:点歌''',
+    usage=f'''将网易云歌曲/歌单分享到群聊即可自动解析\n回复分享消息+文字`下载`即可自动下载(需要时间)\n
+            {cmd}ncm t:开启下载\n{cmd}ncm t:关闭下载\n{cmd}点歌 歌名:点歌''',
     extra={'version': '1.5.0'}
 )
 
@@ -81,7 +81,8 @@ async def music_set_rule(event: Union[GroupMessageEvent, PrivateMessageEvent]) -
 
 
 async def music_reply_rule(event: Union[GroupMessageEvent, PrivateMessageEvent]):
-    return event.reply and event.get_plaintext() == "下载"
+    # logger.info(event.get_plaintext())
+    return event.reply and event.get_plaintext().strip() == "下载"
 
 
 # ============Matcher=============
@@ -210,13 +211,13 @@ async def set_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEv
                         info[0]["song"] = True
                         info[0]["list"] = True
                         setting.update(info[0], Q["user_id"] == event.user_id)
-                        msg = "已开启自动下载功能"
+                        msg = "已开启下载功能"
                         await bot.send(event=event, message=Message(MessageSegment.text(msg)))
                     elif mold in FALSE:
                         info[0]["song"] = False
                         info[0]["list"] = False
                         setting.update(info[0], Q["user_id"] == event.user_id)
-                        msg = "已关闭自动下载功能"
+                        msg = "已关闭下载功能"
                         await bot.send(event=event, message=Message(MessageSegment.text(msg)))
                     logger.debug(f"用户<{event.sender.nickname}>执行操作成功")
                 else:
@@ -244,6 +245,30 @@ async def set_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEv
                     setting.insert({"global": "search", "value": True})
                 elif mold in FALSE:
                     setting.insert({"global": "search", "value": False})
+        elif len(args) == 3 and args[0] == "private":
+            qq = args[1]
+            mold = args[2]
+            info = setting.search(Q["user_id"] == qq)
+            # logger.info(info)
+            if info:
+                if mold in TRUE:
+                    info[0]["song"] = True
+                    info[0]["list"] = True
+                    setting.update(info[0], Q["user_id"] == qq)
+                    msg = f"已开启用户{qq}的下载功能"
+                    await bot.send(event=event, message=Message(MessageSegment.text(msg)))
+                elif mold in FALSE:
+                    info[0]["song"] = False
+                    info[0]["list"] = False
+                    setting.update(info[0], Q["user_id"] == qq)
+                    msg = f"已关闭用户{qq}的下载功能"
+                    await bot.send(event=event, message=Message(MessageSegment.text(msg)))
+                logger.debug(f"用户<{event.sender.nickname}>执行操作成功")
+            else:
+                if mold in TRUE:
+                    setting.insert({"user_id": event.user_id, "song": True, "list": True})
+                elif mold in FALSE:
+                    setting.insert({"user_id": event.user_id, "song": False, "list": False})
     else:
         msg = f"{cmd}ncm:获取命令菜单\r\n说明:网易云歌曲分享到群内后回复机器人即可下载\r\n" \
               f"{cmd}ncm t:开启解析\r\n{cmd}ncm f:关闭解析\n{cmd}点歌 歌名:点歌"
