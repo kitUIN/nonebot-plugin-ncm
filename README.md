@@ -15,6 +15,9 @@
   <a href="https://github.com/kitUIN/nonebot-plugin-ncm/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license">
   </a>
+  <a href="https://pypi.python.org/pypi/nonebot-plugin-ncm">
+    <img src="https://img.shields.io/pypi/v/nonebot-plugin-ncm" alt="pypi">
+  </a>
   <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.0rc2">
     <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.0rc2&color=brightgreen" alt="nonebot">
   </a>
