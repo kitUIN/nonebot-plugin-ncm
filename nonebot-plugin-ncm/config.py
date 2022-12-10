@@ -6,8 +6,8 @@ from pydantic import BaseModel, Extra
 class Config(BaseModel, extra=Extra.ignore):
     superusers: list = []
 
-    ncm_admin: list = ["owner", "admin"]
-    '''设置命令权限（非解析下载，仅解析功能开关设置）'''
+    ncm_admin_level: int = 1
+    '''设置命令权限(1:仅限superusers和群主,2:在1的基础上管理员,3:所有用户)'''
 
     ncm_phone: str = ""
     '''手机号'''
@@ -17,18 +17,6 @@ class Config(BaseModel, extra=Extra.ignore):
 
     ncm_password: str = ""
     '''密码'''
-
-    ncm_song: bool = True
-    '''单曲解析总开关'''
-
-    ncm_list: bool = True
-    '''歌单解析总开关'''
-
-    whitelist: list = []
-    '''白名单(一键导入)'''
-
-    ncm_search: bool = True
-    '''点歌总开关'''
 
 
 global_config = nonebot.get_driver().config

@@ -37,23 +37,13 @@ if not dbPath.is_dir():
 music = TinyDB("./db/musics.json")
 playlist = TinyDB("./db/playlist.json")
 setting = TinyDB("./db/ncm_setting.json")
-ncm_cache = TinyDB("./db/ncm_cache.json")
+ncm_user_cache = TinyDB("./db/ncm_cache.json")
+ncm_check_cache = TinyDB("./db/ncm_check_cache.json")
 Q = Query()
 cmd = list(nonebot.get_driver().config.command_start)[0]
 
 
 class NcmLoginFailedException(Exception): pass
-
-
-# ============白名单导入=============
-for ids in ncm_config.whitelist:
-    info = setting.search(Q["group_id"] == ids)
-    if info:
-        info[0]["song"] = True
-        info[0]["list"] = True
-        setting.update(info[0], Q["group_id"] == ids)
-    else:
-        setting.insert({"group_id": ids, "song": True, "list": True})
 
 
 # ============主类=============
@@ -69,23 +59,22 @@ class Ncm:
 
     @staticmethod
     def save_user(session: str):
-        info = ncm_cache.search(Q["uid"] == "user")
+        info = ncm_user_cache.search(Q["uid"] == "user")
         if info:
             info[0]['session'] = session
-            ncm_cache.update(info[0], Q["uid"] == "user")
+            ncm_user_cache.update(info[0], Q["uid"] == "user")
         else:
-            ncm_cache.insert({"uid": "user", "session": session})
+            ncm_user_cache.insert({"uid": "user", "session": session})
 
     @staticmethod
     def load_user(info):
-       SetCurrentSession(LoadSessionFromString(info[0]['session']))
-            
+        SetCurrentSession(LoadSessionFromString(info[0]['session']))
 
     def login(self):
         try:
             self.api.login.LoginViaCellphone(phone=ncm_config.ncm_phone, password=ncm_config.ncm_password)
             self.get_user_info()
-            
+
         except Exception as e:
             if str(e) == str({'code': 400, 'message': '登陆失败,请进行安全验证'}):
                 logger.error("缺少安全验证，请将账号留空进行二维码登录")
@@ -99,19 +88,19 @@ class Ncm:
         self.save_user(DumpSessionAsString(GetCurrentSession()))
 
     def get_phone_login(self):
-        phone=ncm_config.ncm_phone
-        ctcode=int(ncm_config.ncm_ctcode)
-        result = self.api.login.SetSendRegisterVerifcationCodeViaCellphone(cell=phone,ctcode=ctcode)        
-        if not result.get('code',0) == 200:
+        phone = ncm_config.ncm_phone
+        ctcode = int(ncm_config.ncm_ctcode)
+        result = self.api.login.SetSendRegisterVerifcationCodeViaCellphone(cell=phone, ctcode=ctcode)
+        if not result.get('code', 0) == 200:
             logger.error(result)
         else:
-            logger.success('已发送验证码,输入验证码:')    
+            logger.success('已发送验证码,输入验证码:')
         while True:
             captcha = int(input())
-            verified = self.api.login.GetRegisterVerifcationStatusViaCellphone(phone,captcha,ctcode)
-            if verified.get('code',0) == 200:
+            verified = self.api.login.GetRegisterVerifcationStatusViaCellphone(phone, captcha, ctcode)
+            if verified.get('code', 0) == 200:
                 break
-        result = self.api.login.LoginViaCellphone(phone,captcha=captcha,ctcode=ctcode)
+        result = self.api.login.LoginViaCellphone(phone, captcha=captcha, ctcode=ctcode)
         self.get_user_info()
 
     def get_qrcode(self):
@@ -144,6 +133,18 @@ class Ncm:
         detail = [(data["name"] + "-" + ",".join([names["name"] for names in data["ar"]])) for data in songs]
         return detail
 
+    async def music_check(self, nid):
+        nid = int(nid)
+        info = music.search(Q["id"] == nid)
+        if info:
+            path = Path(info[0]["file"])
+            if path.is_file():
+                return info[0]
+            else:
+                return await self.download(ids=[nid], check=True)
+        else:
+            return None
+
     async def search_song(self, keyword: str, limit: int = 1) -> int:  # 搜索歌曲
         res = self.api.cloudsearch.GetSearchResult(keyword=keyword, stype=SONG, limit=limit)
         logger.debug(f"搜索歌曲{keyword},返回结果:{res}")
@@ -164,11 +165,54 @@ class Ncm:
         msg = f"歌曲ID:{nid}\r\n如需下载请回复该条消息\r\n关闭解析请使用指令\r\n{cmd}ncm f"
         await self.bot.send(event=self.event, message=Message(MessageSegment.text(msg)))
 
-    async def upload_group_file(self, data: list):
+    def check_message(self):
+        """检查缓存中是否存在解析
+
+        :return:
+        """
+        info = ncm_check_cache.search(Q.message_id == self.event.dict()["reply"]["message_id"])
+        return info[0] if info else None
+
+    def get_song(self, nid: Union[int, str], message_id=None):
+        """解析歌曲id,并且加入缓存
+
+        :param message_id:
+        :param nid:
+        :return:
+        """
+        if message_id:
+            mid = message_id
+        else:
+            mid = self.event.message_id
+        ncm_check_cache.insert({"message_id": mid,
+                                "type": "song",
+                                "nid": nid,
+                                "ids": [],
+                                "time": int(time.time())})
+
+    def get_playlist(self, ids: list, message_id=None):
+        """解析歌曲id,并且加入缓存
+
+        :param message_id:
+        :param ids:
+        :return:
+        """
+        if message_id:
+            mid = message_id
+        else:
+            mid = self.event.message_id
+        ncm_check_cache.insert({"message_id": mid,
+                                "type": "playlist",
+                                "nid": 0,
+                                "ids": ids,
+                                "time": int(time.time())})
+
+    async def upload_group_file(self, data):
         try:
             await self.bot.call_api('upload_group_file', group_id=self.event.group_id,
-                                    file=data[0]["file"], name=data[0]["filename"])
+                                    file=data["file"], name=data["filename"])
         except (ActionFailed, NetworkError) as e:
+            logger.error(e.info)
             if isinstance(e, ActionFailed) and e.info["wording"] == "server" \
                                                                     " requires unsupported ftn upload":
                 await self.bot.send(event=self.event, message=Message(MessageSegment.text(
@@ -176,7 +220,17 @@ class Ncm:
                     "请将机器人设置为管理员或者允许群员上传文件")))
             elif isinstance(e, NetworkError):
                 await self.bot.send(event=self.event, message=Message(MessageSegment.text(
-                    "[ERROR]  文件上传失败\r\n[原因]  上传超时")))
+                    "[ERROR]  文件上传失败\r\n[原因]  上传超时(一般来说还在传,建议等待五分钟)")))
+
+    async def upload_private_file(self, data):
+        try:
+            await self.bot.call_api('upload_private_file', user_id=self.event.get_user_id(),
+                                    file=data["file"], name=data["filename"])
+        except (ActionFailed, NetworkError) as e:
+            logger.error(e.info)
+            if isinstance(e, NetworkError):
+                await self.bot.send(event=self.event, message=Message(MessageSegment.text(
+                    "[ERROR]  文件上传失败\r\n[原因]  上传超时(一般来说还在传,建议等待五分钟)")))
 
     async def playlist(self, lid: Union[int, str]):  # 下载歌单
         data = self.api.playlist.GetPlaylistInfo(lid)
@@ -203,7 +257,7 @@ class Ncm:
                 playlist.insert(config)
             return msg
 
-    async def download(self, ids: list):  # 下载音乐
+    async def download(self, ids: list, check=False):  # 下载音乐
         data: list = self.api.track.GetTrackAudio(song_ids=ids, bitrate=3200 * 1000)["data"]
         # logger.info(data)
         name: list = self.detail(ids)
@@ -219,8 +273,8 @@ class Ncm:
             filename = re.sub('[\/:*?"<>|]', '-', filename)
             file = Path.cwd().joinpath("music").joinpath(filename)
             config = {
-                "id": nid,
-                "file": file.__str__(),  # 获取文件位置
+                "id": int(nid),
+                "file": str(file),  # 获取文件位置
                 "filename": filename,  # 获取文件名
                 "from": "song" if len(ids) == 1 else "list",  # 判断来自单曲还是歌单
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # 获取时间
@@ -235,15 +289,15 @@ class Ncm:
                     async with async_open(file, 'wb') as out_file:
                         async for chunk in r.aiter_bytes():
                             await out_file.write(chunk)
-            if len(ids) > 1:
+            if not check and len(ids) > 1:
                 if num // 10 == 0 or num == len(ids):
                     await self.bot.send(event=self.event,
                                         message=Message(MessageSegment.text(f"下载进度:{num}/{len(ids)}")))
                 num += 1
-
+            return config
 
 nncm = Ncm()
-info = ncm_cache.search(Q.uid == "user")
+info = ncm_user_cache.search(Q.uid == "user")
 if info:
     logger.info("检测到缓存，自动加载用户")
     nncm.load_user(info)
@@ -256,4 +310,3 @@ elif ncm_config.ncm_password == "":
     nncm.get_phone_login()
 else:
     nncm.login()
-        
