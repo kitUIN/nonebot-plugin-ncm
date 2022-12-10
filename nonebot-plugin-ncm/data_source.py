@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+import os
+import zipfile
 from pathlib import Path
 from datetime import datetime
 from typing import Union
@@ -12,6 +13,7 @@ from aiofile import async_open
 
 import httpx
 import nonebot
+from nonebot.utils import run_sync
 
 from pyncm import apis, Session, GetCurrentSession, DumpSessionAsString, LoadSessionFromString, SetCurrentSession
 from pyncm.apis.cloudsearch import SONG, USER, PLAYLIST
@@ -34,8 +36,7 @@ if not musicPath.is_dir():
 if not dbPath.is_dir():
     dbPath.mkdir()
     logger.success("ncm数据库目录创建成功")
-music = TinyDB("./db/musics.json")
-playlist = TinyDB("./db/playlist.json")
+music = TinyDB("./db/ncm_musics.json")
 setting = TinyDB("./db/ncm_setting.json")
 ncm_user_cache = TinyDB("./db/ncm_cache.json")
 ncm_check_cache = TinyDB("./db/ncm_check_cache.json")
@@ -161,13 +162,8 @@ class Ncm:
     async def search_playlist(self, keyword: str, limit: int = 1):  # 搜索歌单
         self.api.cloudsearch.GetSearchResult(keyword=keyword, stype=PLAYLIST, limit=limit)
 
-    async def parse_song(self, nid: Union[int, str]):
-        msg = f"歌曲ID:{nid}\r\n如需下载请回复该条消息\r\n关闭解析请使用指令\r\n{cmd}ncm f"
-        await self.bot.send(event=self.event, message=Message(MessageSegment.text(msg)))
-
     def check_message(self):
         """检查缓存中是否存在解析
-
         :return:
         """
         info = ncm_check_cache.search(Q.message_id == self.event.dict()["reply"]["message_id"])
@@ -187,32 +183,40 @@ class Ncm:
         ncm_check_cache.insert({"message_id": mid,
                                 "type": "song",
                                 "nid": nid,
+                                "lid": 0,
                                 "ids": [],
+                                "lmsg": "",
                                 "time": int(time.time())})
 
-    def get_playlist(self, ids: list, message_id=None):
-        """解析歌曲id,并且加入缓存
+    def get_playlist(self, lid: Union[int, str]):
+        data = self.api.playlist.GetPlaylistInfo(lid)
+        # logger.info(data)
+        if data["code"] == 200:
+            raw = data["playlist"]
+            tags = ",".join(raw['tags'])
+            songs = [i['id'] for i in raw['trackIds']]
+            ncm_check_cache.insert({"message_id": self.event.message_id,
+                                    "type": "playlist",
+                                    "nid": 0,
+                                    "lid": lid,
+                                    "ids": songs,
+                                    "lmsg": f"歌单:{raw['name']}\r\n创建者:{raw['creator']['nickname']}\r\n歌曲总数:{raw['trackCount']}\r\n"
+                                            f"标签:{tags}\r\n播放次数:{raw['playCount']}\r\n收藏:{raw['subscribedCount']}\r\n"
+                                            f"评论:{raw['commentCount']}\r\n分享:{raw['shareCount']}\r\nListID:{lid}",
+                                    "time": int(time.time())})
 
-        :param message_id:
-        :param ids:
-        :return:
-        """
-        if message_id:
-            mid = message_id
-        else:
-            mid = self.event.message_id
-        ncm_check_cache.insert({"message_id": mid,
-                                "type": "playlist",
-                                "nid": 0,
-                                "ids": ids,
-                                "time": int(time.time())})
+    async def upload_group_data_file(self, data):
+        await self.upload_group_file(file=data["file"], name=data["filename"])
 
-    async def upload_group_file(self, data):
+    async def upload_private_data_file(self, data):
+        await self.upload_private_file(file=data["file"], name=data["filename"])
+
+    async def upload_group_file(self, file, name):
         try:
-            await self.bot.call_api('upload_group_file', group_id=self.event.group_id,
-                                    file=data["file"], name=data["filename"])
+            await self.bot.upload_group_file(group_id=self.event.group_id,
+                                             file=file, name=name)
         except (ActionFailed, NetworkError) as e:
-            logger.error(e.info)
+            logger.error(e)
             if isinstance(e, ActionFailed) and e.info["wording"] == "server" \
                                                                     " requires unsupported ftn upload":
                 await self.bot.send(event=self.event, message=Message(MessageSegment.text(
@@ -222,47 +226,28 @@ class Ncm:
                 await self.bot.send(event=self.event, message=Message(MessageSegment.text(
                     "[ERROR]  文件上传失败\r\n[原因]  上传超时(一般来说还在传,建议等待五分钟)")))
 
-    async def upload_private_file(self, data):
+    async def upload_private_file(self, file, name):
         try:
-            await self.bot.call_api('upload_private_file', user_id=self.event.get_user_id(),
-                                    file=data["file"], name=data["filename"])
+            await self.bot.upload_private_file(user_id=self.event.user_id,
+                                               file=file, name=name)
         except (ActionFailed, NetworkError) as e:
-            logger.error(e.info)
+            logger.error(e)
             if isinstance(e, NetworkError):
                 await self.bot.send(event=self.event, message=Message(MessageSegment.text(
                     "[ERROR]  文件上传失败\r\n[原因]  上传超时(一般来说还在传,建议等待五分钟)")))
 
-    async def playlist(self, lid: Union[int, str]):  # 下载歌单
-        data = self.api.playlist.GetPlaylistInfo(lid)
-        # logger.info(data)
-        if data["code"] == 200:
-            raw = data["playlist"]
-            tags = ",".join(raw['tags'])
-            msg = f"歌单:{raw['name']}\r\n创建者:{raw['creator']['nickname']}\r\n歌曲总数:{raw['trackCount']}\r\n" \
-                  f"标签:{tags}\r\n播放次数:{raw['playCount']}\r\n收藏:{raw['subscribedCount']}\r\n" \
-                  f"评论:{raw['commentCount']}\r\n分享:{raw['shareCount']}\r\nLIST:{lid}" \
-                  f"\r\n如需下载请回复该条消息\r\n关闭解析请使用指令\r\n{cmd}ncm f"
-            songs = [i['id'] for i in raw['trackIds']]
-            info = playlist.search(Q["playlist_id"] == lid)
-            if info:
-                info[0]["time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                playlist.update(info[0], Q["playlist_id"] == lid)
-            else:
-                config = {
-                    "playlist_id": lid,
-                    "counts": raw['trackCount'],  # 歌曲总数
-                    "ids": songs,  # id列表
-                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # 获取时间
-                }
-                playlist.insert(config)
-            return msg
+    @run_sync
+    def get_zip(self, lid, filenames: list):
+        zip_file_new = f'{lid}.zip'
+        with zipfile.ZipFile(str(Path.cwd().joinpath("music").joinpath(zip_file_new)), 'w', zipfile.ZIP_DEFLATED) as z:
+            for f in filenames:
+                z.write(str(f), f.name)
+        return zip_file_new
 
-    async def download(self, ids: list, check=False):  # 下载音乐
+    async def download(self, ids: list, check=False, lid=0, is_zip=False):  # 下载音乐
         data: list = self.api.track.GetTrackAudio(song_ids=ids, bitrate=3200 * 1000)["data"]
-        # logger.info(data)
         name: list = self.detail(ids)
-        # logger.info(name)
-        num = 1
+        filenames = []
         for i in range(len(ids)):
             if data[i]["code"] == 404:
                 logger.error("未从网易云读取到下载地址")
@@ -279,6 +264,7 @@ class Ncm:
                 "from": "song" if len(ids) == 1 else "list",  # 判断来自单曲还是歌单
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # 获取时间
             }
+            filenames.append(file)
             info = music.search(Q["id"] == nid)
             if info:  # 数据库储存
                 music.update(config, Q["id"] == nid)
@@ -289,12 +275,10 @@ class Ncm:
                     async with async_open(file, 'wb') as out_file:
                         async for chunk in r.aiter_bytes():
                             await out_file.write(chunk)
-            if not check and len(ids) > 1:
-                if num // 10 == 0 or num == len(ids):
-                    await self.bot.send(event=self.event,
-                                        message=Message(MessageSegment.text(f"下载进度:{num}/{len(ids)}")))
-                num += 1
-            return config
+        if is_zip:
+            await self.get_zip(lid=lid, filenames=filenames)
+        return config
+
 
 nncm = Ncm()
 info = ncm_user_cache.search(Q.uid == "user")

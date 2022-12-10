@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from pathlib import Path
 from typing import Tuple, Any, Union
 
 import nonebot
@@ -129,7 +130,8 @@ async def receive_song(bot: Bot,
 
 
 @music_regex.handle()
-async def music_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent], regroup: Tuple[Any, ...] = RegexGroup()):
+async def music_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent],
+                        regroup: Tuple[Any, ...] = RegexGroup()):
     nid = regroup[1]
     logger.info(f"已识别NID:{nid}的歌曲")
     nncm.get_session(bot, event)
@@ -137,12 +139,12 @@ async def music_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessage
 
 
 @playlist_regex.handle()
-async def music_list_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent], regroup: Tuple[Any, ...] = RegexGroup()):
+async def music_list_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent],
+                             regroup: Tuple[Any, ...] = RegexGroup()):
     lid = regroup[0]
     logger.info(f"已识别LID:{lid}的歌单")
     nncm.get_session(bot, event)
-    msg = await nncm.playlist(lid=lid)
-    await bot.send(event=event, message=Message(MessageSegment.text(msg)))
+    nncm.get_playlist(lid=lid)
 
 
 @music_reply.handle()
@@ -158,24 +160,26 @@ async def music_reply_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateM
         data = await nncm.music_check(info["nid"])
         if data:
             if isinstance(event, GroupMessageEvent):
-                await nncm.upload_group_file(data)
+                await nncm.upload_group_data_file(data)
             elif isinstance(event, PrivateMessageEvent):
-                await nncm.upload_private_file(data)
+                await nncm.upload_private_data_file(data)
         else:
             logger.error("数据库中未有该音乐地址数据")
 
     elif info["type"] == "playlist" and await playlist_is_open(event):
-        await nncm.download(ids=info["ids"])
-        for i in info["ids"]:
-            data = await nncm.music_check(i)
-            if data:
-                await nncm.upload_group_file(data)
-            else:
-                logger.error("数据库中未有该音乐地址数据")
+        await bot.send(event=event, message=info["lmsg"]+"\n下载中")
+        await nncm.download(ids=info["ids"], lid=info["lid"], is_zip=ncm_config.ncm_playlist_zip)
+        filename = f"{info['lid']}.zip"
+        data = Path.cwd().joinpath("music").joinpath(filename)
+        if isinstance(event, GroupMessageEvent):
+            await nncm.upload_group_file(file=str(data), name=filename)
+        elif isinstance(event, PrivateMessageEvent):
+            await nncm.upload_private_file(file=str(data), name=filename)
 
 
 @ncm_set.handle()
-async def set_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent], args: Message = CommandArg()):  # 功能设置接收
+async def set_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent],
+                      args: Message = CommandArg()):  # 功能设置接收
     logger.debug(f"权限为{event.sender.role}的用户<{event.sender.nickname}>尝试使用命令{cmd}ncm {args}")
     if args:
         args = str(args).split()

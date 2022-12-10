@@ -18,6 +18,9 @@ class Config(BaseModel, extra=Extra.ignore):
     ncm_password: str = ""
     '''密码'''
 
+    ncm_playlist_zip: bool = False
+    '''上传歌单时是否压缩'''
+
 
 global_config = nonebot.get_driver().config
 ncm_config = Config(**global_config.dict())  # 载入配置
