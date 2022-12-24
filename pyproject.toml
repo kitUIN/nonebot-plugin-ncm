@@ -20,6 +20,8 @@ pyncm ="^1.6.8.3"
 aiofile ="^3.7.4"
 nonebot-adapter-onebot = "^2.1.5"
 qrcode = "^7.3.1"
+httpx = { version = ">=0.20.0,<1.0.0", extras = ["http2"], optional = true }
+
 [tool.poetry.dev-dependencies]
 
 [build-system]
