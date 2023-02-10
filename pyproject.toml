@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nonebot-plugin-ncm"
-version = "1.5.3"
+version = "1.5.4"
 description = "基于go-cqhttp与nonebot2的 网易云 无损音乐下载"
 license = "Apache License 2.0"
 authors = ["kitUIN <kulujun@gmail.com>"]
