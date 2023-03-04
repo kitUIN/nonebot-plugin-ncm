@@ -161,7 +161,7 @@ async def music_reply_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateM
     if info is None:
         return
     if info["type"] == "song" and await song_is_open(event):
-        await bot.send(event=event, message="少女祈祷中🙏...")
+        await bot.send(event=event, message="少女祈祷中🙏...上传时间较久,请勿重复发送命令")
         await nncm.download(ids=[int(info["nid"])])
         data = await nncm.music_check(info["nid"])
         if data:
@@ -173,14 +173,25 @@ async def music_reply_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateM
             logger.error("数据库中未有该音乐地址数据")
 
     elif info["type"] == "playlist" and await playlist_is_open(event):
-        await bot.send(event=event, message=info["lmsg"]+"\n下载中")
-        await nncm.download(ids=info["ids"], lid=info["lid"], is_zip=ncm_config.ncm_playlist_zip)
+        await bot.send(event=event, message=info["lmsg"]+"\n下载中,上传时间较久,请勿重复发送命令")
+        not_zips = await nncm.download(ids=info["ids"], lid=info["lid"], is_zip=ncm_config.ncm_playlist_zip)
         filename = f"{info['lid']}.zip"
         data = Path.cwd().joinpath("music").joinpath(filename)
-        if isinstance(event, GroupMessageEvent):
-            await nncm.upload_group_file(file=str(data), name=filename)
-        elif isinstance(event, PrivateMessageEvent):
-            await nncm.upload_private_file(file=str(data), name=filename)
+        if ncm_config.ncm_playlist_zip:
+            logger.debug(f"Upload:{filename}")
+            if isinstance(event, GroupMessageEvent):
+                await nncm.upload_group_file(file=str(data), name=filename)
+            elif isinstance(event, PrivateMessageEvent):
+                await nncm.upload_private_file(file=str(data), name=filename)
+        else:
+            for i in not_zips:
+                file = i["file"]
+                filename = i["filename"]
+                logger.debug(f"Upload:{filename}")
+                if isinstance(event, GroupMessageEvent):
+                    await nncm.upload_group_file(file=file, name=filename)
+                elif isinstance(event, PrivateMessageEvent):
+                    await nncm.upload_private_file(file=file, name=filename)
 
 
 @ncm_set.handle()

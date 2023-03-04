@@ -223,8 +223,8 @@ class Ncm:
                     "[ERROR]  文件上传失败\r\n[原因]  机器人缺少上传文件的权限\r\n[解决办法]  "
                     "请将机器人设置为管理员或者允许群员上传文件")))
             elif isinstance(e, NetworkError):
-                await self.bot.send(event=self.event, message=Message(MessageSegment.text(
-                    "[ERROR]  文件上传失败\r\n[原因]  上传超时(一般来说还在传,建议等待五分钟)")))
+                await self.bot.send(event=self.event, message=Message(MessageSegment.text("[ERROR]文件上传失败\r\n[原因]  "
+                                                                                          "上传超时(一般来说还在传,建议等待五分钟)")))
 
     async def upload_private_file(self, file, name):
         try:
@@ -248,6 +248,7 @@ class Ncm:
         data: list = self.api.track.GetTrackAudio(song_ids=ids, bitrate=3200 * 1000)["data"]
         name: list = self.detail(ids)
         filenames = []
+        not_zips = []
         for i in range(len(ids)):
             if data[i]["code"] == 404:
                 logger.error("未从网易云读取到下载地址")
@@ -265,6 +266,7 @@ class Ncm:
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # 获取时间
             }
             filenames.append(file)
+            not_zips.append(config)
             info = music.search(Q["id"] == nid)
             if info:  # 数据库储存
                 music.update(config, Q["id"] == nid)
@@ -275,9 +277,10 @@ class Ncm:
                     async with async_open(file, 'wb') as out_file:
                         async for chunk in r.aiter_bytes():
                             await out_file.write(chunk)
+            logger.debug(f"Download:{filename}")
         if is_zip:
             await self.get_zip(lid=lid, filenames=filenames)
-        return config
+        return not_zips
 
 
 nncm = Ncm()
