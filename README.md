@@ -28,28 +28,62 @@
 </p>
 
 
-## 安装
-### 使用pip安装
-1.`pip install nonebot-plugin-ncm` 进行安装  
-2.并在`bot.py`添加`nonebot.load_plugin('nonebot-plugin-ncm')`
-### 使用nb-cli安装(推荐)
-`nb plugin install nonebot-plugin-ncm` 进行安装
-
+## 安装 💿
+ 
 <details>
-  <summary>如果希望使用`nonebot2 a16`及以下版本 </summary>
-  请使用`pip install nonebot-plugin-ncm==1.1.0`进行安装
+<summary>使用 nb-cli 安装</summary>
+在 nonebot2 项目的根目录下打开命令行, 输入以下指令即可安装
+
+    nb plugin install nonebot-plugin-ncm  
+    或者  
+    python -m nb_cli plugin install nonebot-plugin-ncm  
+    
 </details>
 
-## 升级
-1.`pip install nonebot-plugin-ncm --upgrade` 进行升级  
-2. 低于`1.5.0`版本升级请删除`db`文件夹内`ncm`开头文件  
-3. 根据新的`config`项配置`.env`文件
-## 快速使用
+<details>
+<summary>使用包管理器安装</summary>
+在 nonebot2 项目的插件目录下, 打开命令行, 根据你使用的包管理器, 输入相应的安装命令
+
+<details>
+<summary>pip</summary>
+
+    pip install nonebot-plugin-ncm
+</details>
+<details>
+<summary>pdm</summary>
+
+    pdm add nonebot-plugin-ncm
+</details>
+<details>
+<summary>poetry</summary>
+
+    poetry add nonebot-plugin-ncm
+</details>
+
+打开 nonebot2 项目根目录下的 `pyproject.toml` 文件, 在 `[tool.nonebot]` 部分追加写入
+
+    plugins = ["nonebot-plugin-ncm"]
+
+</details>
+<details>
+  <summary>如果希望使用`nonebot2 a16`及以下版本 </summary>
+  
+    pip install nonebot-plugin-ncm==1.1.0
+</details>
+
+## 快速使用 ▶️
 将链接或者卡片分享到聊天群或机器人,回复分享的消息并输入`下载`即可进行下载  
 分享之后是没有反应的,只有对需要解析的消息回复`下载`才会响应  
-**默认下载状态为关闭，请在每个群内使用`/ncm t`开启,私聊则默认开启**
+**默认下载状态为关闭，请在每个群内使用`/ncm t`开启,私聊则默认开启**  
 ![a1v9gk.png](https://files.catbox.moe/a1v9gk.png)
-### 命令列表：
+
+
+## 注意说明 ⚠️
+- 使用的网易云账号**需要拥有黑胶VIP** 
+- 默认下载最高音质的音乐,可以修改`ncm_bitrate`项更改音乐品质  
+- 本程序实质为调用web接口下载音乐上传
+
+### 命令列表 📃
 | 命令                 | 备注        |
 |--------------------|-----------|
 | /ncm               | 获取命令菜单    |
@@ -62,13 +96,18 @@
 | /ncm private qq号 f | 关闭该用户私聊下载 |
 - 命令开始符号会自动识别[`COMMAND_START`](https://v2.nonebot.dev/docs/api/config#Config-command_start)项
 
-## 注意说明
-- 使用的网易云账号**需要拥有黑胶VIP** 
-- 默认下载最高音质的音乐 
-- 本程序实质为调用web接口下载音乐上传  
 
-## 配置文件说明
+## 配置文件说明 ⚙️
+| 配置项 | 必填 | 默认值 | 说明 |
+|:-----:|:----:|:----:|:----:|
+| ncm_admin_level | 否 | 1 | 设置命令权限(1:仅限superusers和群主,2:在1的基础上+管理员,3:所有用户) |
+| ncm_ctcode | 否 | 86 | 手机号区域码 |
+| ncm_phone | 是 |   | 网易云绑定的手机号(留空则二维码登录) |
+| ncm_password | 是 |   | 网易云账号密码(留空则短信登录) |
+| ncm_playlist_zip | 否 | False | 是否开启本地图片存储，True为开启本地图片存储 |
+| ncm_bitrate | 否 | 320 | 下载码率(单位K) <=96: m4a, >=320:flac, 96< mp3 <320|
 ```
+# 这是示例
 ncm_admin_level=1 # 设置命令权限(1:仅限superusers和群主,2:在1的基础上+管理员,3:所有用户)
 ncm_ctcode="86" # 手机号区域码,默认86
 ncm_phone=  # 手机登录
@@ -77,7 +116,7 @@ ncm_playlist_zip=False # 上传歌单时是否压缩
 ncm_bitrate: int = 320 # 下载码率(单位K) 96及以下为m4a,320及以上为flac,中间mp3
 ```
 
-## 功能列表
+## 功能列表 📃
 - [x] 识别/下载 网易云单曲
     - 链接
     - 卡片
