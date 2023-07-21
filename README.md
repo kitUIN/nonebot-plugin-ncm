@@ -46,8 +46,9 @@
 3. 根据新的`config`项配置`.env`文件
 ## 快速使用
 将链接或者卡片分享到聊天群或机器人,回复分享的消息并输入`下载`即可进行下载  
+分享之后是没有反应的,只有对需要解析的消息回复`下载`才会响应  
 **默认下载状态为关闭，请在每个群内使用`/ncm t`开启,私聊则默认开启**
-![img](https://files.catbox.moe/g7c230.png)
+![a1v9gk.png](https://files.catbox.moe/a1v9gk.png)
 ### 命令列表：
 | 命令                 | 备注        |
 |--------------------|-----------|
@@ -73,6 +74,7 @@ ncm_ctcode="86" # 手机号区域码,默认86
 ncm_phone=  # 手机登录
 ncm_password=  # 密码
 ncm_playlist_zip=False # 上传歌单时是否压缩
+ncm_bitrate: int = 320 # 下载码率(单位K) 96及以下为m4a,320及以上为flac,中间mp3
 ```
 
 ## 功能列表

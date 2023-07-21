@@ -4,7 +4,7 @@ import os
 import zipfile
 from pathlib import Path
 from datetime import datetime
-from typing import Union
+from typing import Union, List, Optional, Dict
 import re
 
 import qrcode
@@ -51,12 +51,6 @@ class NcmLoginFailedException(Exception): pass
 class Ncm:
     def __init__(self):
         self.api = apis
-        self.bot = None
-        self.event = None
-
-    def get_session(self, bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
-        self.bot = bot
-        self.event = event
 
     @staticmethod
     def save_user(session: str):
@@ -68,14 +62,14 @@ class Ncm:
             ncm_user_cache.insert({"uid": "user", "session": session})
 
     @staticmethod
-    def load_user(info):
-        SetCurrentSession(LoadSessionFromString(info[0]['session']))
+    def load_user(session: str):
+        SetCurrentSession(LoadSessionFromString(session))
 
-    def login(self):
+    def login(self) -> bool:
         try:
             self.api.login.LoginViaCellphone(phone=ncm_config.ncm_phone, password=ncm_config.ncm_password)
             self.get_user_info()
-
+            return True
         except Exception as e:
             if str(e) == str({'code': 400, 'message': '登陆失败,请进行安全验证'}):
                 logger.error("缺少安全验证，请将账号留空进行二维码登录")
@@ -83,10 +77,13 @@ class Ncm:
                 self.get_qrcode()
             else:
                 raise e
+            return False
 
-    def get_user_info(self):
-        logger.success(f"欢迎您网易云用户:{GetCurrentSession().nickname} [{GetCurrentSession().uid}]")
+    def get_user_info(self) -> str:
+        message: str = f"欢迎您网易云用户:{GetCurrentSession().nickname} [{GetCurrentSession().uid}]";
+        logger.success(message)
         self.save_user(DumpSessionAsString(GetCurrentSession()))
+        return message
 
     def get_phone_login(self):
         phone = ncm_config.ncm_phone
@@ -134,17 +131,14 @@ class Ncm:
         detail = [(data["name"] + "-" + ",".join([names["name"] for names in data["ar"]])) for data in songs]
         return detail
 
-    async def music_check(self, nid):
+    async def music_check(self, nid: int) -> Union[List[Dict[str, Union[str, int]]], Dict[str, Union[str, int]], None]:
         nid = int(nid)
         info = music.search(Q["id"] == nid)
         if info:
             path = Path(info[0]["file"])
             if path.is_file():
                 return info[0]
-            else:
-                return await self.download(ids=[nid], check=True)
-        else:
-            return None
+        return await self.download(ids=[nid])
 
     async def search_song(self, keyword: str, limit: int = 1) -> int:  # 搜索歌曲
         res = self.api.cloudsearch.GetSearchResult(keyword=keyword, stype=SONG, limit=limit)
@@ -162,40 +156,39 @@ class Ncm:
     async def search_playlist(self, keyword: str, limit: int = 1):  # 搜索歌单
         self.api.cloudsearch.GetSearchResult(keyword=keyword, stype=PLAYLIST, limit=limit)
 
-    def check_message(self):
+    @staticmethod
+    def check_message(message_id: int):
         """检查缓存中是否存在解析
         :return:
         """
-        info = ncm_check_cache.search(Q.message_id == self.event.dict()["reply"]["message_id"])
+        info = ncm_check_cache.search(Q.message_id == message_id)
         return info[0] if info else None
 
-    def get_song(self, nid: Union[int, str], message_id=None):
+    @staticmethod
+    def get_song(nid: int, message_id: int):
         """解析歌曲id,并且加入缓存
 
         :param message_id:
         :param nid:
         :return:
         """
-        if message_id:
-            mid = message_id
-        else:
-            mid = self.event.message_id
-        ncm_check_cache.insert({"message_id": mid,
+        ncm_check_cache.insert({"message_id": message_id,
                                 "type": "song",
-                                "nid": nid,
+                                "nid": int(nid),
                                 "lid": 0,
                                 "ids": [],
                                 "lmsg": "",
                                 "time": int(time.time())})
 
-    def get_playlist(self, lid: Union[int, str]):
+    def get_playlist(self, lid: int, message_id: int):
+        lid = int(lid)
         data = self.api.playlist.GetPlaylistInfo(lid)
         # logger.info(data)
         if data["code"] == 200:
             raw = data["playlist"]
             tags = ",".join(raw['tags'])
-            songs = [i['id'] for i in raw['trackIds']]
-            ncm_check_cache.insert({"message_id": self.event.message_id,
+            songs = [int(i['id']) for i in raw['trackIds']]
+            ncm_check_cache.insert({"message_id": message_id,
                                     "type": "playlist",
                                     "nid": 0,
                                     "lid": lid,
@@ -205,54 +198,61 @@ class Ncm:
                                             f"评论:{raw['commentCount']}\r\n分享:{raw['shareCount']}\r\nListID:{lid}",
                                     "time": int(time.time())})
 
-    async def upload_group_data_file(self, data):
-        await self.upload_group_file(file=data["file"], name=data["filename"])
+    async def upload_group_data_file(self, group_id: int, data: Dict[str, Union[str, int]]):
+        await self.upload_group_file(group_id=group_id, file=data["file"], name=data["filename"])
 
-    async def upload_private_data_file(self, data):
-        await self.upload_private_file(file=data["file"], name=data["filename"])
+    async def upload_private_data_file(self, user_id: int, data: Dict[str, Union[str, int]]):
+        await self.upload_private_file(user_id=user_id, file=data["file"], name=data["filename"])
 
-    async def upload_group_file(self, file, name):
+    @staticmethod
+    async def upload_group_file(group_id: int, file: str, name: str):
         try:
-            await self.bot.upload_group_file(group_id=self.event.group_id,
-                                             file=file, name=name)
+            bot: Bot = nonebot.get_bot()
+            await bot.upload_group_file(group_id=group_id, file=file, name=name)
         except (ActionFailed, NetworkError) as e:
             logger.error(e)
+            bot: Bot = nonebot.get_bot()
             if isinstance(e, ActionFailed) and e.info["wording"] == "server" \
                                                                     " requires unsupported ftn upload":
-                await self.bot.send(event=self.event, message=Message(MessageSegment.text(
+                await bot.send_group_msg(group_id=group_id, message=Message(MessageSegment.text(
                     "[ERROR]  文件上传失败\r\n[原因]  机器人缺少上传文件的权限\r\n[解决办法]  "
                     "请将机器人设置为管理员或者允许群员上传文件")))
             elif isinstance(e, NetworkError):
-                await self.bot.send(event=self.event, message=Message(MessageSegment.text("[ERROR]文件上传失败\r\n[原因]  "
-                                                                                          "上传超时(一般来说还在传,建议等待五分钟)")))
+                await bot.send_group_msg(group_id=group_id,
+                                         message=Message(MessageSegment.text("[ERROR]文件上传失败\r\n[原因]  "
+                                                                             "上传超时(一般来说还在传,建议等待五分钟)")))
 
-    async def upload_private_file(self, file, name):
+    @staticmethod
+    async def upload_private_file(user_id: int, file: str, name: str):
         try:
-            await self.bot.upload_private_file(user_id=self.event.user_id,
-                                               file=file, name=name)
+            bot: Bot = nonebot.get_bot()
+            await bot.upload_private_file(user_id=user_id, file=file, name=name)
         except (ActionFailed, NetworkError) as e:
             logger.error(e)
             if isinstance(e, NetworkError):
-                await self.bot.send(event=self.event, message=Message(MessageSegment.text(
+                bot: Bot = nonebot.get_bot()
+                await  bot.send_private_msg(user_id=user_id, message=Message(MessageSegment.text(
                     "[ERROR]  文件上传失败\r\n[原因]  上传超时(一般来说还在传,建议等待五分钟)")))
 
     @run_sync
-    def get_zip(self, lid, filenames: list):
+    def get_zip(self, lid: int, filenames: list):
         zip_file_new = f'{lid}.zip'
         with zipfile.ZipFile(str(Path.cwd().joinpath("music").joinpath(zip_file_new)), 'w', zipfile.ZIP_DEFLATED) as z:
             for f in filenames:
                 z.write(str(f), f.name)
         return zip_file_new
 
-    async def download(self, ids: list, check=False, lid=0, is_zip=False):  # 下载音乐
-        data: list = self.api.track.GetTrackAudio(song_ids=ids, bitrate=3200 * 1000)["data"]
+    async def download(self, ids: List[int], lid: int = 0, is_zip=False) -> Optional[List[Dict[str, Union[str, int]]]]:
+        """一般地 320k及以上即 flac, 320k及以下即 mp3,96k及以下即 m4a
+        """
+        data: list = self.api.track.GetTrackAudio(song_ids=ids, bitrate=ncm_config.ncm_bitrate * 1000)["data"]
         name: list = self.detail(ids)
         filenames = []
         not_zips = []
         for i in range(len(ids)):
             if data[i]["code"] == 404:
                 logger.error("未从网易云读取到下载地址")
-                return
+                return None
             url = data[i]["url"]
             nid = data[i]["id"]
             filename = f"{name[i]}.{data[i]['type']}"
@@ -287,7 +287,7 @@ nncm = Ncm()
 info = ncm_user_cache.search(Q.uid == "user")
 if info:
     logger.info("检测到缓存，自动加载用户")
-    nncm.load_user(info)
+    nncm.load_user(info[0]['session'])
     nncm.get_user_info()
 elif ncm_config.ncm_phone == "":
     logger.warning("您未填写账号,自动进入二维码登录模式")
