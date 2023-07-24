@@ -17,7 +17,7 @@ from nonebot.rule import Rule
 from pydantic.main import BaseModel
 
 from .data_source import nncm, ncm_config, setting, Q, cmd
-
+from .config import Config
 
 # =======nonebot-plugin-help=======
 @dataclass(eq=False)
@@ -41,7 +41,7 @@ class PluginMetadata:
     """插件类型，用于商店分类"""
     homepage: Optional[str] = "https://github.com/kitUIN/nonebot-plugin-ncm"
     """插件主页"""
-    config: Optional[Type[BaseModel]] = ncm_config
+    config: Optional[Type[BaseModel]] = Config
     """插件配置项"""
     supported_adapters: Optional[Set[str]] = {"nonebot.adapters.onebot.v11"},
     """插件支持的适配器模块路径
