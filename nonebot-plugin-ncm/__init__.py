@@ -18,41 +18,20 @@ from pydantic.main import BaseModel
 
 from .data_source import nncm, ncm_config, setting, Q, cmd
 from .config import Config
+from nonebot.plugin import PluginMetadata
 
-# =======nonebot-plugin-help=======
-@dataclass(eq=False)
-class PluginMetadata:
-    """插件元信息，由插件编写者提供"""
-
-    name: str = "网易云无损音乐下载",
-    """插件名称"""
-    description: str = "✨ 基于go-cqhttp与nonebot2的 网易云 无损音乐下载 ✨",
-    """插件功能介绍"""
-    usage: str = (
+__plugin_meta__ = PluginMetadata(
+    name="网易云无损音乐下载",
+    description="基于go-cqhttp与nonebot2的 网易云无损音乐下载",
+    usage=(
         '将网易云歌曲/歌单分享到群聊即可自动解析\n'
-        '回复分享消息 + 文字`下载` 即可开始下载歌曲并上传到群文件(需要稍等一会)\n'
-        '指令：\n'
-        f'开启下载：{cmd}ncm t\n'
-        f'关闭下载：{cmd}ncm f\n'
-        f'点歌：{cmd}点歌 歌名'
-    )
-    """插件使用方法"""
-    type: Optional[str] = "application"
-    """插件类型，用于商店分类"""
-    homepage: Optional[str] = "https://github.com/kitUIN/nonebot-plugin-ncm"
-    """插件主页"""
-    config: Optional[Type[BaseModel]] = Config
-    """插件配置项"""
-    supported_adapters: Optional[Set[str]] = {"nonebot.adapters.onebot.v11"},
-    """插件支持的适配器模块路径
-
-    格式为 `<module>[:<Adapter>]`，`~` 为 `nonebot.adapters.` 的缩写。
-
-    `None` 表示支持**所有适配器**。
-    """
-
-
-__plugin_meta__ = PluginMetadata(...)
+        '回复分享消息 + 文字`下载` 即可开始下载歌曲并上传到群文件(需要稍等一会)'
+    ),
+    config=Config,
+    type="application",
+    homepage="https://github.com/kitUIN/nonebot-plugin-ncm",
+    supported_adapters={"~onebot.v11"},
+)
 # ========nonebot-plugin-ncm======
 # ===========Constant=============
 TRUE = ["True", "T", "true", "t"]
