@@ -161,11 +161,11 @@ class Ncm:
         """检查缓存中是否存在解析
         :return:
         """
-        info = ncm_check_cache.search(Q.message_id == message_id)
-        return info[0] if info else None
+        flag = ncm_check_cache.search(Q.message_id == message_id)
+        return flag[0] if flag else None
 
     @staticmethod
-    def get_song(nid: int, message_id: int):
+    def get_song(nid: int, message_id: int, bot_id: str):
         """解析歌曲id,并且加入缓存
 
         :param message_id:
@@ -178,9 +178,10 @@ class Ncm:
                                 "lid": 0,
                                 "ids": [],
                                 "lmsg": "",
+                                "bot_id": bot_id,
                                 "time": int(time.time())})
 
-    def get_playlist(self, lid: int, message_id: int):
+    def get_playlist(self, lid: int, message_id: int, bot_id: str):
         lid = int(lid)
         data = self.api.playlist.GetPlaylistInfo(lid)
         # logger.info(data)
@@ -196,6 +197,7 @@ class Ncm:
                                     "lmsg": f"歌单:{raw['name']}\r\n创建者:{raw['creator']['nickname']}\r\n歌曲总数:{raw['trackCount']}\r\n"
                                             f"标签:{tags}\r\n播放次数:{raw['playCount']}\r\n收藏:{raw['subscribedCount']}\r\n"
                                             f"评论:{raw['commentCount']}\r\n分享:{raw['shareCount']}\r\nListID:{lid}",
+                                    "bot_id": bot_id,
                                     "time": int(time.time())})
 
     async def upload_group_data_file(self, group_id: int, data: Dict[str, Union[str, int]]):
@@ -205,13 +207,13 @@ class Ncm:
         await self.upload_private_file(user_id=user_id, file=data["file"], name=data["filename"])
 
     @staticmethod
-    async def upload_group_file(group_id: int, file: str, name: str):
+    async def upload_group_file(group_id: int, file: str, name: str, bot_id: str):
         try:
-            bot: Bot = nonebot.get_bot()
+            bot: Bot = nonebot.get_bot(bot_id)
             await bot.upload_group_file(group_id=group_id, file=file, name=name)
         except (ActionFailed, NetworkError) as e:
             logger.error(e)
-            bot: Bot = nonebot.get_bot()
+            bot: Bot = nonebot.get_bot(bot_id)
             if isinstance(e, ActionFailed) and e.info["wording"] == "server" \
                                                                     " requires unsupported ftn upload":
                 await bot.send_group_msg(group_id=group_id, message=Message(MessageSegment.text(
@@ -223,14 +225,14 @@ class Ncm:
                                                                              "上传超时(一般来说还在传,建议等待五分钟)")))
 
     @staticmethod
-    async def upload_private_file(user_id: int, file: str, name: str):
+    async def upload_private_file(user_id: int, file: str, name: str, bot_id: str):
         try:
-            bot: Bot = nonebot.get_bot()
+            bot: Bot = nonebot.get_bot(bot_id)
             await bot.upload_private_file(user_id=user_id, file=file, name=name)
         except (ActionFailed, NetworkError) as e:
             logger.error(e)
             if isinstance(e, NetworkError):
-                bot: Bot = nonebot.get_bot()
+                bot: Bot = nonebot.get_bot(bot_id)
                 await  bot.send_private_msg(user_id=user_id, message=Message(MessageSegment.text(
                     "[ERROR]  文件上传失败\r\n[原因]  上传超时(一般来说还在传,建议等待五分钟)")))
 

@@ -140,7 +140,8 @@ async def music_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMessage
                         regroup: Tuple[Any, ...] = RegexGroup()):
     nid = regroup[1]
     logger.info(f"已识别NID:{nid}的歌曲")
-    nncm.get_song(nid=nid, message_id=event.message_id)
+
+    nncm.get_song(nid=nid, message_id=event.message_id, bot_id=bot.self_id)
 
 
 @playlist_regex.handle()
@@ -156,7 +157,7 @@ async def music_reply_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateM
     info = nncm.check_message(int(event.dict()["reply"]["message_id"]))
     if info is None:
         return
-    if info["type"] == "song" and await song_is_open(event):
+    if info["type"] == "song" and await song_is_open(event) and info["bot_id"] == bot.self_id:
         await bot.send(event=event, message="少女祈祷中🙏...上传时间较久,请勿重复发送命令")
         data = await nncm.music_check(info["nid"])
         if isinstance(data, list):
@@ -170,7 +171,7 @@ async def music_reply_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateM
             logger.error("数据库中未有该音乐地址数据")
             await bot.send(event=event, message="数据库中未有该音乐地址数据")
 
-    elif info["type"] == "playlist" and await playlist_is_open(event):
+    elif info["type"] == "playlist" and await playlist_is_open(event) and info["bot_id"] == bot.self_id:
         await bot.send(event=event, message=info["lmsg"] + "\n下载中,上传时间较久,请勿重复发送命令")
         not_zips = await nncm.download(ids=info["ids"], lid=info["lid"], is_zip=ncm_config.ncm_playlist_zip)
         filename = f"{info['lid']}.zip"
@@ -178,9 +179,9 @@ async def music_reply_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateM
         if ncm_config.ncm_playlist_zip:
             logger.debug(f"Upload:{filename}")
             if isinstance(event, GroupMessageEvent):
-                await nncm.upload_group_file(group_id=event.group_id, file=str(data), name=filename)
+                await nncm.upload_group_file(group_id=event.group_id, file=str(data), name=filename,bot_id=info["bot_id"])
             elif isinstance(event, PrivateMessageEvent):
-                await nncm.upload_private_file(user_id=event.user_id, file=str(data), name=filename)
+                await nncm.upload_private_file(user_id=event.user_id, file=str(data), name=filename,bot_id=info["bot_id"])
         else:
             for i in not_zips:
                 file = i["file"]
