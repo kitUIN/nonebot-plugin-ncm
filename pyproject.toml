@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nonebot-plugin-ncm"
-version = "1.6.3"
+version = "1.6.4"
 description = "基于go-cqhttp与nonebot2的 网易云 无损音乐下载"
 license = "Apache License 2.0"
 authors = ["kitUIN <kulujun@gmail.com>"]
@@ -20,7 +20,7 @@ pyncm ="^1.6.9.1"
 aiofile ="^3.8.7"
 nonebot-adapter-onebot = "^2.1.5"
 qrcode = "^7.3.1"
-httpx = "^0.23.1"
+httpx = "^0.24.1"
 Pillow = "^9.3.0"
 [tool.poetry.dev-dependencies]
 

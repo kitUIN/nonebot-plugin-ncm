@@ -18,8 +18,8 @@
   <a href="https://pypi.python.org/pypi/nonebot-plugin-ncm">
     <img src="https://img.shields.io/pypi/v/nonebot-plugin-ncm" alt="pypi">
   </a>
-  <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.0rc2">
-    <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.0rc2&color=brightgreen" alt="nonebot">
+  <a href="https://github.com/nonebot/nonebot2/releases/tag/v2.0.1">
+    <img src="https://img.shields.io/static/v1?label=nonebot2&message=v2.0.1&color=brightgreen" alt="nonebot">
   </a>
   <a href="https://github.com/kitUIN/nonebot-plugin-ncm/releases">
     <img src="https://img.shields.io/github/v/release/kitUIN/nonebot-plugin-ncm" alt="release">
