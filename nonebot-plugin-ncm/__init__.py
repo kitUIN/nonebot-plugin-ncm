@@ -164,9 +164,9 @@ async def music_reply_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateM
             data = data[0]
         if data:
             if isinstance(event, GroupMessageEvent):
-                await nncm.upload_group_data_file(event.group_id, data)
+                await nncm.upload_group_data_file(event.group_id, data, bot_id=info["bot_id"])
             elif isinstance(event, PrivateMessageEvent):
-                await nncm.upload_private_data_file(event.user_id, data)
+                await nncm.upload_private_data_file(event.user_id, data, bot_id=info["bot_id"])
         else:
             logger.error("数据库中未有该音乐地址数据")
             await bot.send(event=event, message="数据库中未有该音乐地址数据")
@@ -179,9 +179,11 @@ async def music_reply_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateM
         if ncm_config.ncm_playlist_zip:
             logger.debug(f"Upload:{filename}")
             if isinstance(event, GroupMessageEvent):
-                await nncm.upload_group_file(group_id=event.group_id, file=str(data), name=filename,bot_id=info["bot_id"])
+                await nncm.upload_group_file(group_id=event.group_id, file=str(data), name=filename,
+                                             bot_id=info["bot_id"])
             elif isinstance(event, PrivateMessageEvent):
-                await nncm.upload_private_file(user_id=event.user_id, file=str(data), name=filename,bot_id=info["bot_id"])
+                await nncm.upload_private_file(user_id=event.user_id, file=str(data), name=filename,
+                                               bot_id=info["bot_id"])
         else:
             for i in not_zips:
                 file = i["file"]
