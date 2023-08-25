@@ -200,11 +200,11 @@ class Ncm:
                                     "bot_id": bot_id,
                                     "time": int(time.time())})
 
-    async def upload_group_data_file(self, group_id: int, data: Dict[str, Union[str, int]]):
-        await self.upload_group_file(group_id=group_id, file=data["file"], name=data["filename"])
+    async def upload_group_data_file(self, group_id: int, data: Dict[str, Union[str, int]], bot_id: str):
+        await self.upload_group_file(group_id=group_id, file=data["file"], name=data["filename"], bot_id=bot_id)
 
-    async def upload_private_data_file(self, user_id: int, data: Dict[str, Union[str, int]]):
-        await self.upload_private_file(user_id=user_id, file=data["file"], name=data["filename"])
+    async def upload_private_data_file(self, user_id: int, data: Dict[str, Union[str, int]], bot_id: str):
+        await self.upload_private_file(user_id=user_id, file=data["file"], name=data["filename"], bot_id=bot_id)
 
     @staticmethod
     async def upload_group_file(group_id: int, file: str, name: str, bot_id: str):
