@@ -127,7 +127,7 @@ async def receive_song(bot: Bot,
                        ):
     _id = await nncm.search_song(keyword=str(song), limit=1)
     message_id = await bot.send(event=event, message=Message(MessageSegment.music(type_="163", id_=_id)))
-    nncm.get_song(message_id=message_id["message_id"], nid=_id)
+    nncm.get_song(message_id=message_id["message_id"], nid=_id, bot_id=bot.self_id)
     # try:
 
     # except ActionFailed as e:
@@ -149,7 +149,7 @@ async def music_list_receive(bot: Bot, event: Union[GroupMessageEvent, PrivateMe
                              regroup: Tuple[Any, ...] = RegexGroup()):
     lid = regroup[0]
     logger.info(f"已识别LID:{lid}的歌单")
-    nncm.get_playlist(lid=lid, message_id=event.message_id)
+    nncm.get_playlist(lid=lid, message_id=event.message_id, bot_id=bot.self_id)
 
 
 @music_reply.handle()

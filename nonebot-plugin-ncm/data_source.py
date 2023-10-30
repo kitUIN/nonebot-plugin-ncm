@@ -168,6 +168,7 @@ class Ncm:
     def get_song(nid: int, message_id: int, bot_id: str):
         """解析歌曲id,并且加入缓存
 
+        :param bot_id:
         :param message_id:
         :param nid:
         :return:
