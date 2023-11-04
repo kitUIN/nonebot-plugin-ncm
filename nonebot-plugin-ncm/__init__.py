@@ -125,7 +125,7 @@ async def receive_song(bot: Bot,
                        event: Union[GroupMessageEvent, PrivateMessageEvent],
                        song: Message = Arg(),
                        ):
-    _id = await nncm.search_song(keyword=str(song), limit=1)
+    _id = await nncm.search_song(keyword=song.extract_plain_text(), limit=1)
     message_id = await bot.send(event=event, message=Message(MessageSegment.music(type_="163", id_=_id)))
     nncm.get_song(message_id=message_id["message_id"], nid=_id, bot_id=bot.self_id)
     # try:
