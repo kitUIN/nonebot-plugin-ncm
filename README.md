@@ -104,7 +104,6 @@
 | ncm_ctcode | 否 | 86 | 手机号区域码 |
 | ncm_phone | 是 |   | 网易云绑定的手机号(留空则二维码登录) |
 | ncm_password | 是 |   | 网易云账号密码(留空则短信登录) |
-| ncm_playlist_zip | 否 | False | 是否开启歌单打包上传 |
 | ncm_bitrate | 否 | 320 | 下载码率(单位K) <=96: m4a, >=320:flac, 96< mp3 <320|
 ```
 # 这是示例
