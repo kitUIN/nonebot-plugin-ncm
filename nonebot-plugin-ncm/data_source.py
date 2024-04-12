@@ -61,7 +61,7 @@ class Ncm:
 
     def login(self) -> bool:
         try:
-            self.api.login.LoginViaCellphone(phone=ncm_config.ncm_phone, password=ncm_config.ncm_password)
+            self.api.login.LoginViaCellphone(phone=str(ncm_config.ncm_phone), password=ncm_config.ncm_password)
             self.get_user_info()
             return True
         except Exception as e:
@@ -80,8 +80,8 @@ class Ncm:
         return message
 
     def get_phone_login(self):
-        phone = ncm_config.ncm_phone
-        ctcode = int(ncm_config.ncm_ctcode)
+        phone: str = str(ncm_config.ncm_phone)
+        ctcode: int = ncm_config.ncm_ctcode
         result = self.api.login.SetSendRegisterVerifcationCodeViaCellphone(cell=phone, ctcode=ctcode)
         if not result.get('code', 0) == 200:
             logger.error(result)
@@ -312,7 +312,7 @@ if info:
     logger.info("检测到缓存，自动加载用户")
     nncm.load_user(info[0]['session'])
     nncm.get_user_info()
-elif ncm_config.ncm_phone == "":
+elif ncm_config.ncm_phone is None:
     logger.warning("您未填写账号,自动进入二维码登录模式")
     nncm.get_qrcode()
 elif ncm_config.ncm_password == "":
