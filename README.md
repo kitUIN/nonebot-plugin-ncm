@@ -109,8 +109,8 @@
 # 这是示例
 ncm_admin_level=1 # 设置命令权限(1:仅限superusers和群主,2:在1的基础上+管理员,3:所有用户)
 ncm_ctcode=86 # 手机号区域码,默认86
-ncm_phone=  # 手机登录
-ncm_password=  # 密码
+ncm_phone=  # 手机登录,不填的话把这行删了
+ncm_password=  # 密码,不填的话把这行删了
 ncm_playlist_zip=False # 上传歌单时是否压缩
 ncm_bitrate=320 # 下载码率(单位K) 96及以下为m4a,320及以上为flac,中间mp3
 ```
