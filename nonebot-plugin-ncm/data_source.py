@@ -315,7 +315,7 @@ if info:
 elif ncm_config.ncm_phone is None:
     logger.warning("您未填写账号,自动进入二维码登录模式")
     nncm.get_qrcode()
-elif ncm_config.ncm_password == "":
+elif ncm_config.ncm_password is None:
     logger.warning("您未填写密码,自动进入手机验证码登录模式")
     nncm.get_phone_login()
 else:

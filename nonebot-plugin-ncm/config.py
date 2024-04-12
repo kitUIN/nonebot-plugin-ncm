@@ -17,7 +17,7 @@ class Config(BaseModel, extra=Extra.ignore):
     ncm_ctcode: int = 86
     '''手机号区域码,默认86'''
 
-    ncm_password: str = ""
+    ncm_password: Optional[str] = None
     '''密码'''
     ncm_bitrate: int = 320
     '''下载码率(单位K) 96及以下为m4a,320及以上为flac,中间mp3'''
