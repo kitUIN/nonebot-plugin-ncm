@@ -113,7 +113,7 @@ class Ncm:
         while True:
             rsp = self.api.login.LoginQrcodeCheck(uuid)  # 检测扫描状态
             if rsp["code"] == 803 or rsp["code"] == 800:
-                self.api.login.WriteLoginInfo(self.api.login.GetCurrentLoginStatus())
+                self.api.login.WriteLoginInfo(self.api.login.GetCurrentLoginStatus(), GetCurrentSession())
                 self.get_user_info()
                 return True
             time.sleep(1)
