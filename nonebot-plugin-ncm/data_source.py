@@ -74,7 +74,7 @@ class Ncm:
             return False
 
     def get_user_info(self) -> str:
-        message: str = f"欢迎您网易云用户:{GetCurrentSession().nickname} [{GetCurrentSession().uid}]";
+        message: str = f"欢迎您网易云用户:{GetCurrentSession().nickname} [{GetCurrentSession().uid}]"
         logger.success(message)
         self.save_user(DumpSessionAsString(GetCurrentSession()))
         return message
@@ -113,9 +113,7 @@ class Ncm:
         while True:
             rsp = self.api.login.LoginQrcodeCheck(uuid)  # 检测扫描状态
             if rsp["code"] == 803 or rsp["code"] == 800:
-                st = self.api.login.GetCurrentLoginStatus()
-                logger.debug(st)
-                self.api.login.WriteLoginInfo(st)
+                self.api.login.WriteLoginInfo(self.api.login.GetCurrentLoginStatus())
                 self.get_user_info()
                 return True
             time.sleep(1)
