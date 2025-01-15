@@ -69,25 +69,27 @@ async def playlist_is_open(event: Union[GroupMessageEvent, PrivateMessageEvent])
             setting.insert({"user_id": event.user_id, "song": True, "list": True})
             return True
 
-
-async def check_search() -> bool:
-    info = setting.search(Q["global"] == "search")
-    if info:
-        return info[0]["value"]
-    else:
-        setting.insert({"global": "search", "value": True})
-        return True
-
+async def check_search(event: Union[GroupMessageEvent, PrivateMessageEvent]) -> bool:
+    try:
+        info = setting.search(Q["global"] == "search")
+        if info:
+            return info[0]["value"]
+        else:
+            setting.insert({"global": "search", "value": True})
+            return True
+    except Exception:
+        return False
 
 async def music_set_rule(event: Union[GroupMessageEvent, PrivateMessageEvent]) -> bool:
     # 权限设置
     return event.sender.role in ADMIN[:ncm_config.ncm_admin_level] or event.get_user_id() in ncm_config.superusers
 
-
-async def music_reply_rule(event: Union[GroupMessageEvent, PrivateMessageEvent]):
-    # logger.info(event.get_plaintext())
-    return event.reply and event.get_plaintext().strip() == "下载"
-
+async def music_reply_rule(event: Union[GroupMessageEvent, PrivateMessageEvent]) -> bool:
+    try:
+        # logger.info(event.get_plaintext())
+        return bool(event.reply and event.get_plaintext().strip() == "下载")
+    except Exception:
+        return False
 
 # ============Matcher=============
 ncm_set = on_command("ncm",
