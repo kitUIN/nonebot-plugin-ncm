@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "nonebot-plugin-ncm"
-version = "1.6.17"
+version = "1.6.18"
 description = "基于go-cqhttp与nonebot2的 网易云 无损音乐下载"
 license = "Apache License 2.0"
 authors = ["kitUIN <kulujun@gmail.com>"]
-maintainers = ["kitUIN <kulujun@gmail.com>", "Kurokitu"]
+maintainers = ["kitUIN <kulujun@gmail.com>", "lgc2333", "KCKT0112", "TeamBreakerr"]
 readme = "README.md"
 packages = [
     { include = "nonebot-plugin-ncm" }
