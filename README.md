@@ -28,6 +28,8 @@
 </p>
 
 
+# 本项目不再维护,请移步到隔壁项目: [nonebot-plugin-multincm](https://github.com/lgc-NB2Dev/nonebot-plugin-multincm)
+
 ## 安装 💿
  
 <details>
